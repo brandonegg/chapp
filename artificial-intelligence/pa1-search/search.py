@@ -184,7 +184,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
             expanded += [node]
 
             for (child, direction, cost) in problem.expand(node):
-                frontier.push((child, actions_taken + [direction]), cost + heuristic(node, problem))
+                frontier.update((child, actions_taken + [direction]), cost + heuristic(node, problem))
 
     util.raiseNotDefined()
 
