@@ -99,7 +99,6 @@ def tinyMazeSearch(problem):
     w = Directions.WEST
     return  [s, s, w, s, w, w, s, w]
 
-
 def depthFirstSearch(problem):
     """
     Search the deepest nodes in the search tree first.
@@ -114,6 +113,24 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     """
     "*** YOUR CODE HERE ***"
+    from util import Stack
+
+    frontier = Stack()
+    expanded = []
+    frontier.push((problem.getStartState(), [])) # state, directions taken to get to state
+
+    while not frontier.isEmpty():
+        (node, actions_taken) = frontier.pop()
+
+        if (problem.isGoalState(node)):
+            return actions_taken
+        
+        if node not in expanded:
+            expanded += [node]
+
+            for (child, direction, _cost) in problem.expand(node):
+                frontier.push((child, actions_taken + [direction]))
+
     util.raiseNotDefined()
 
 def breadthFirstSearch(problem):
