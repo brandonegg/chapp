@@ -136,6 +136,25 @@ def depthFirstSearch(problem):
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
+    from util import Queue
+
+    frontier = Queue()
+    expanded = []
+
+    frontier.push((problem.getStartState(), [])) # state, directions taken to get to state
+
+    while not frontier.isEmpty():
+        (node, actions_taken) = frontier.pop()
+
+        if (problem.isGoalState(node)):
+            return actions_taken
+        
+        if node not in expanded:
+            expanded += [node]
+
+            for (child, direction, _cost) in problem.expand(node):
+                frontier.push((child, actions_taken + [direction]))
+
     util.raiseNotDefined()
 
 def nullHeuristic(state, problem=None):
@@ -148,6 +167,25 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
+    from util import PriorityQueue
+    
+    frontier = PriorityQueue()
+    expanded = []
+
+    frontier.push((problem.getStartState(), []), 0) # state, directions taken to get to state
+
+    while not frontier.isEmpty():
+        (node, actions_taken) = frontier.pop()
+
+        if (problem.isGoalState(node)):
+            return actions_taken
+        
+        if node not in expanded:
+            expanded += [node]
+
+            for (child, direction, cost) in problem.expand(node):
+                frontier.push((child, actions_taken + [direction]), cost + heuristic(node, problem))
+
     util.raiseNotDefined()
 
 
