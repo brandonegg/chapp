@@ -114,10 +114,11 @@ def depthFirstSearch(problem):
     """
     "*** YOUR CODE HERE ***"
     from util import Stack
+    start = problem.getStartState()
 
     frontier = Stack()
     expanded = []
-    frontier.push((problem.getStartState(), [])) # state, directions taken to get to state
+    frontier.push((start, [])) # state, directions taken to get to state
 
     while not frontier.isEmpty():
         (node, actions_taken) = frontier.pop()
@@ -138,10 +139,12 @@ def breadthFirstSearch(problem):
     "*** YOUR CODE HERE ***"
     from util import Queue
 
+    start = problem.getStartState()
+
     frontier = Queue()
     expanded = []
 
-    frontier.push((problem.getStartState(), [])) # state, directions taken to get to state
+    frontier.push((start, [])) # state, directions taken to get to state
 
     while not frontier.isEmpty():
         (node, actions_taken) = frontier.pop()
@@ -172,10 +175,10 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     frontier = PriorityQueue()
     expanded = []
 
-    frontier.push((problem.getStartState(), []), 0) # state, directions taken to get to state
+    frontier.push((problem.getStartState(), [], 0), 0) # state, directions taken to get to state, cost to get to state
 
     while not frontier.isEmpty():
-        (node, actions_taken) = frontier.pop()
+        (node, actions_taken, path_cost) = frontier.pop()
 
         if (problem.isGoalState(node)):
             return actions_taken
@@ -184,7 +187,8 @@ def aStarSearch(problem, heuristic=nullHeuristic):
             expanded += [node]
 
             for (child, direction, cost) in problem.expand(node):
-                frontier.update((child, actions_taken + [direction]), cost + heuristic(node, problem))
+                total = path_cost + cost + heuristic(child, problem)
+                frontier.update((child, actions_taken + [direction], path_cost + cost), total)
 
     util.raiseNotDefined()
 
