@@ -425,6 +425,8 @@ def cornersHeuristic(state, problem):
     if min_corner_cost == None:
         return 0
 
+    #scale_factor = len(corners_remaining)/len(corners)
+
     return min_corner_cost
 
 class AStarCornersAgent(SearchAgent):

@@ -175,7 +175,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     frontier = PriorityQueue()
     expanded = []
 
-    frontier.push((problem.getStartState(), [], 0), 0) # state, directions taken to get to state, cost to get to state
+    frontier.push((problem.getStartState(), [], 0), 0) # current position, directions taken to get to position, cost to get to position
 
     while not frontier.isEmpty():
         (node, actions_taken, path_cost) = frontier.pop()
