@@ -413,7 +413,7 @@ def cornersHeuristic(state, problem):
     "*** YOUR CODE HERE ***"
     # cost of each move is 
     (current_pos, corners_remaining) = state
-    min_corner_cost = None
+    corner_costs = []
 
     if corners_remaining == 0:
         return 0
@@ -422,18 +422,14 @@ def cornersHeuristic(state, problem):
         delta_x = current_pos[0] - corner_remaining[0]
         delta_y = current_pos[1] - corner_remaining[1]
         
-        # cost_estimate = ( delta_x ** 2 + delta_y ** 2 ) ** 0.5
         cost_estimate = abs(delta_x) + abs(delta_y)
 
-        if min_corner_cost is None or cost_estimate < min_corner_cost:
-            min_corner_cost = cost_estimate
+        corner_costs += [cost_estimate]
 
-    if min_corner_cost == None:
+    if len(corner_costs) == 0:
         return 0
 
-    # scale_factor = len(corners_remaining)/len(corners)
-
-    return min_corner_cost
+    return max(corner_costs)
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
