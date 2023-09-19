@@ -545,6 +545,8 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
+    import statistics
+
     remaining_foods = foodGrid.asList()
 
     if len(remaining_foods) == 0:
@@ -553,17 +555,12 @@ def foodHeuristic(state, problem):
     def food_manhatten_cost(food_pos):
         return abs(food_pos[0]-position[0]) + abs(food_pos[1]-position[1])
 
-    min_distance_cost = None
+    def food_euclidean_cost(food_pos):
+        return ((food_pos[0] - position[0]) ** 2 + (food_pos[1] - position[1]) ** 2) ** 0.5
 
-    for food in remaining_foods:
-        food_distance_cost = food_manhatten_cost(food)
-        if min_distance_cost is None or food_distance_cost < min_distance_cost:
-            min_distance_cost = food_distance_cost
+    mean_food = (statistics.mean([food[0] for food in remaining_foods]), statistics.mean([food[1] for food in remaining_foods]))
 
-    if min_distance_cost is None:
-        return 0
-
-    return min_distance_cost
+    return food_manhatten_cost(mean_food)
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
