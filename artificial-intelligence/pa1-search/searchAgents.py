@@ -591,6 +591,8 @@ class ClosestDotSearchAgent(SearchAgent):
         Returns a path (a list of actions) to the closest dot, starting from
         gameState.
         """
+        from search import aStarSearch
+    
         # Here are some useful elements of the startState
         startPosition = gameState.getPacmanPosition()
         food = gameState.getFood()
@@ -598,7 +600,19 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        cur_shortest_path = None
+
+        for food in food.asList():
+            def euclidian_food_goal(position, problem):
+                xy1 = position
+                xy2 = food
+                return ( (xy1[0] - xy2[0]) ** 2 + (xy1[1] - xy2[1]) ** 2 ) ** 0.5
+
+            path = aStarSearch(problem, euclidian_food_goal)
+            if cur_shortest_path is None or len(path) < len(cur_shortest_path):
+                cur_shortest_path = path
+
+        return cur_shortest_path
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
