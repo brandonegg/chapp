@@ -556,8 +556,8 @@ def foodHeuristic(state, problem):
     def manhatten_cost(start_pos, end_pos):
         return abs(end_pos[0]-start_pos[0]) + abs(end_pos[1]-start_pos[1])
 
-    def food_euclidean_cost(food_pos):
-        return ((food_pos[0] - position[0]) ** 2 + (food_pos[1] - position[1]) ** 2) ** 0.5
+    def euclidean_cost(start_pos, end_pos):
+        return ((end_pos[0] - start_pos[0]) ** 2 + (end_pos[1] - start_pos[1]) ** 2) ** 0.5
 
     def is_wall_blocking_path(start_pos, end_pos):
         delta_x = end_pos[0] - start_pos[0]
@@ -579,7 +579,7 @@ def foodHeuristic(state, problem):
     food_cloest_to_mean = None
 
     for food in remaining_foods:
-        distance_to_mean = manhatten_cost(food, mean_food)
+        distance_to_mean = manhatten_cost(food, mean_food) + 20*int(is_wall_blocking_path(food, mean_food))
         if min_distance_to_mean is None or distance_to_mean < min_distance_to_mean:
             min_distance_to_mean = distance_to_mean
             food_cloest_to_mean = food
