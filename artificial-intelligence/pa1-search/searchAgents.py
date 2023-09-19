@@ -545,6 +545,7 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
+    import math
     import statistics
 
     remaining_foods = foodGrid.asList()
@@ -552,15 +553,40 @@ def foodHeuristic(state, problem):
     if len(remaining_foods) == 0:
         return 0
 
-    def food_manhatten_cost(food_pos):
-        return abs(food_pos[0]-position[0]) + abs(food_pos[1]-position[1])
+    def manhatten_cost(start_pos, end_pos):
+        return abs(end_pos[0]-start_pos[0]) + abs(end_pos[1]-start_pos[1])
 
     def food_euclidean_cost(food_pos):
         return ((food_pos[0] - position[0]) ** 2 + (food_pos[1] - position[1]) ** 2) ** 0.5
 
+    def is_wall_blocking_path(start_pos, end_pos):
+        delta_x = end_pos[0] - start_pos[0]
+        delta_y = end_pos[1] - start_pos[1]
+
+        x_dir = 0
+        if delta_x > 0:
+            x_dir = int(abs(delta_x) / delta_x)
+
+        y_dir = 0
+        if delta_y > 0:
+            y_dir = int(abs(delta_y) / delta_y)
+
+        return problem.walls[start_pos[0] + x_dir][start_pos[1] + y_dir]
+
     mean_food = (statistics.mean([food[0] for food in remaining_foods]), statistics.mean([food[1] for food in remaining_foods]))
 
-    return food_manhatten_cost(mean_food)
+    min_distance_to_mean = None
+    food_cloest_to_mean = None
+
+    for food in remaining_foods:
+        distance_to_mean = manhatten_cost(food, mean_food)
+        if min_distance_to_mean is None or distance_to_mean < min_distance_to_mean:
+            min_distance_to_mean = distance_to_mean
+            food_cloest_to_mean = food
+
+    distance = manhatten_cost(position, food_cloest_to_mean)    
+
+    return distance + 2*int(is_wall_blocking_path(position, food_cloest_to_mean))
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
