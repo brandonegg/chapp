@@ -1,0 +1,1 @@
+def available_actions(state):
