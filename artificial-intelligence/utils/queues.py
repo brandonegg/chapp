@@ -19,7 +19,10 @@ class PriorityQueue:
     self.queue = new_queue
 
   def pop(self):
-    return self.queue.pop(0)
+    return self.queue.pop(0)[1]
+  
+  def len(self):
+    return len(self.queue)
 
 
 # Tests
