@@ -1,4 +1,5 @@
 from pgclient import PGClient
+from exceptions import CommandNotFoundException, InvalidCommandFormatException
 
 class Command:
   def __init__(self, label, description, callback):
@@ -21,18 +22,45 @@ class CLISession:
   def __main_routine(self):
     self.__output_commands()
     self.__await_response()
+    self.__main_routine()
 
   def __await_response(self):
     user_input = input("Select an option (index number or name) from the list above: ")
-    self.__call_command(self.__parse_command_str(user_input))
+    print("")
+
+    try:
+      self.__call_command(self.__parse_command_str(user_input))
+    except InvalidCommandFormatException:
+      print("ERROR: Invalid format of command, please input either the index number or name of the command")
+    except CommandNotFoundException:
+      print("ERROR: No command found with the provided name/index")
+
+    print("")
 
   def __parse_command_str(self, input: str):
-    # TODO:
-    return input
+    input = input.strip('')
+    split_input = input.split(" ")
 
-  def __call_command(self, parsed_str: str):
-    # TODO:
-    pass
+    if not len(split_input) == 1:
+      raise InvalidCommandFormatException
+
+    return split_input[0]
+
+  def __call_command(self, parsed_cmd: str):
+    for command in self.commands:
+      if command.label == parsed_cmd:
+        command.call()
+        return
+      
+    try:
+      cmd_index = int(parsed_cmd)
+    except:
+      raise CommandNotFoundException
+    
+    if cmd_index >= len(self.commands):
+      raise CommandNotFoundException
+    
+    self.commands[cmd_index].call()
 
   def __output_commands(self):
     print("------------------------------------")
@@ -49,3 +77,4 @@ class CLISession:
   def __exit(self):
     print("Exiting application and closing the PostgreSQL connection")
     self.pg_client.connection.close()
+    exit(0)
