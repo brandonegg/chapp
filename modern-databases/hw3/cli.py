@@ -16,7 +16,9 @@ class Command:
 class CLISession:
   def __init__(self, pg_client: PGClient):
     self.pg_client = pg_client
-    self.commands = [Command("exit", "Exit the application", self.__exit)]
+    self.commands = [Command("countries:list", "List all available countries", self.pg_client.print_all_countries),
+                     Command("exit", "Exit the application", self.__exit)]
+    
     self.__main_routine()
 
   def __main_routine(self):
@@ -25,8 +27,8 @@ class CLISession:
     self.__main_routine()
 
   def __await_response(self):
-    user_input = input("Select an option (index number or name) from the list above: ")
-    print("")
+    user_input = input("| Select an option (index number or name) from the list above: ")
+    print("------------------------------------")
 
     try:
       self.__call_command(self.__parse_command_str(user_input))

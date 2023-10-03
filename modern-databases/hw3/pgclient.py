@@ -24,4 +24,12 @@ class PGClient:
                                        port = port,
                                        database = db_name)
 
-    self.cursor = self.connection.cursor()
+  def print_all_countries(self):
+    with self.connection.cursor() as cursor:
+      cursor.execute('SELECT country_code, country_name FROM homework.countries')
+      countries = cursor.fetchall()
+      formatted_country_str = [f"{country_name} ({country_code})" for (country_code, country_name) in countries]
+      
+      print("List of countries {name (code)}:")
+      print("")
+      print(', '.join(formatted_country_str))
