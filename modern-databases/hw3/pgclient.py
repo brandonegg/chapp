@@ -57,4 +57,13 @@ class PGClient:
 
       print("Cities:")
       print("")
-      print(cities)
+      print(', '.join(cities))
+
+  def update_city(self, postal=None, country=None, name=None):
+    # TODO:
+    pass
+
+  def delete_city(self, postal=None, country=None, name=None):
+    # TODO
+    # select and display all effected rows then ask user to confirm with y/n prompt
+    pass
