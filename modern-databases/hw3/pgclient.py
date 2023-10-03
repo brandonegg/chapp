@@ -33,3 +33,28 @@ class PGClient:
       print("List of countries {name (code)}:")
       print("")
       print(', '.join(formatted_country_str))
+
+  def print_cities(self, postal=None, country=None, name=None):
+    use_and = False
+    query = 'SELECT name, postal_code, country_code FROM homework.cities'
+
+    options = [("postal_code", postal), ("country_code", country), ("name", name)]
+    for (column, value) in options:
+      if value is None:
+        continue
+
+      if use_and:
+        query += ' AND'
+      else:
+        query += ' WHERE'
+        use_and = True
+
+      query += f" {column} = '{value}'"
+
+    with self.connection.cursor() as cursor:
+      cursor.execute(query)
+      cities = cursor.fetchall()
+
+      print("Cities:")
+      print("")
+      print(cities)
