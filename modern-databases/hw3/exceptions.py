@@ -1,0 +1,2 @@
+class InvalidCredentialFileException(Exception):
+  pass
