@@ -1,6 +1,7 @@
 from exceptions import InvalidCredentialFileException
 from pgclient import PGClient
 from psycopg2 import OperationalError
+from cli import CLISession
 
 CREDENTIALS_PATH = './credentials.txt'
 DB_NAME = 'mdb_student06'
@@ -10,6 +11,7 @@ DB_PORT = '5432'
 def run():
   pg_client = PGClient(CREDENTIALS_PATH, DB_ADDR, DB_PORT, DB_NAME)
   print("PostgreSQL database connection established successfully!")
+  CLISession(pg_client)
 
 if __name__ == '__main__':
   try:
