@@ -3,31 +3,47 @@
 #include <stdio.h>
 #include <math.h>
 
-void read_file(char* const fileName) {
-  FILE* file = fopen(fileName, "r"); /* should check the result */
-  char line[256];
+/**
+ * @param line Input line to read from
+ * @param startRange output start hex value for the line's memory range
+ * @param endRange output end hex value for the line's memory range
+ */
+void parse_mem_map_line_range(char* line, unsigned long* startRange, unsigned long* endRange) {
+  int foundSplit = 0;
+  int offset = 0; //tracks offset of either start or end range str
 
-  while (fgets(line, sizeof(line), file)) {
-      /* note that fgets don't strip the terminating \n, checking its
-          presence would allow to handle lines longer that sizeof(line) */
-      printf("%s", line); 
-  }
-  /* may check feof here to make a difference between eof and io failure -- network
-      timeout for instance */
-
-  fclose(file);
+  int result = sscanf(line, "%lx-%lx %*s", startRange, endRange);
 }
 
 /**
  * @returns 1 if address provided is in the virtual memory otherwise 0
  */
-int is_address_in_virt_mem(void *addr) {
+int is_address_in_virt_mem(unsigned long *addr) {
   int pid = (int) getpid();
+  unsigned long *startRangePtr = (unsigned long*) malloc(sizeof(unsigned long));
+  unsigned long *endRangePtr = (unsigned long*) malloc(sizeof(unsigned long));
 
   char fileName[50];
   sprintf(fileName, "/proc/%d/maps", pid);
 
-  read_file(fileName);
+  FILE* file = fopen(fileName, "r");
+  char line[256];
+
+  while (fgets(line, sizeof(line), file)) {
+    parse_mem_map_line_range(line, startRangePtr, endRangePtr);
+
+    if (*startRangePtr <= *addr && *endRangePtr >= *addr) {
+      free(startRangePtr);
+      free(endRangePtr);
+
+      return 1;
+    }
+  }
+
+  fclose(file);
+
+  free(startRangePtr);
+  free(endRangePtr);
 
   return 0;
 }
@@ -38,9 +54,14 @@ int main(int argc, char *argv[], char* env[]) {
     exit(-1);
   }
 
-  char* addr = (char *)strtoul(argv[1], NULL, 16);
+  unsigned long addr = (unsigned long)strtoul(argv[1], NULL, 16);
 
-  int result = is_address_in_virt_mem(addr);
+  int result = is_address_in_virt_mem(&addr);
 
-  exit(-1);
+  if (result == 0) {
+    exit(-1);
+  }
+
+  printf("this address is in my virtual memory!\n");
+  exit(0);
 }
