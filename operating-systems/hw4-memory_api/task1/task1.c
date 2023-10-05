@@ -48,6 +48,14 @@ int is_address_in_virt_mem(unsigned long *addr) {
   return 0;
 }
 
+/**
+ * @note Assumes the address is in applications virtual memory map.
+ */
+void print_address(unsigned long * addr) {
+  char* valuePtr = (char*) *addr; // 1 char = 1 byte = 2 hex digits
+  printf("%02x\n", *valuePtr);
+}
+
 int main(int argc, char *argv[], char* env[]) {
   if (argc != 2) {
     fprintf(stderr, "Usage: %s <required_address>\n", argv[0]);
@@ -62,6 +70,5 @@ int main(int argc, char *argv[], char* env[]) {
     exit(-1);
   }
 
-  printf("this address is in my virtual memory!\n");
-  exit(0);
+  print_address(&addr);
 }
