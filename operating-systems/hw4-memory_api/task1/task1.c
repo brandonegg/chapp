@@ -49,6 +49,8 @@ int is_address_in_virt_mem(unsigned long *addr) {
 }
 
 /**
+ * Prints the 2 least significant hex digits of the value at the specified memory address.
+ *
  * @note Assumes the address is in applications virtual memory map.
  */
 void print_address(unsigned long * addr) {
