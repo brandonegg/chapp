@@ -253,7 +253,39 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def get_action_score_tuple_score(e):
+            return e[1]
+
+        tree_height = 1 + (self.depth * gameState.getNumAgents())
+
+        def recursive_minimax(cur_game_state, agents_turn, tree_depth):
+            '''
+            returns are tuple (action to take at given state, score you will receive)
+            '''
+            if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
+                return (None, cur_game_state.getScore())
+
+            is_max = agents_turn == 0
+            next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
+            legal_actions = cur_game_state.getLegalActions(agents_turn)
+
+            # base case:
+            if tree_depth == (tree_height - 1) or len(legal_actions) == 0:
+                return (None, self.evaluationFunction(cur_game_state))
+            
+            # recursive case:
+            next_states = [] # (action to take, score you'll get)
+            for action in legal_actions:
+                next_state = cur_game_state.getNextState(agents_turn, action)
+                (_, action_score) = recursive_minimax(next_state, next_agent, tree_depth+1)
+                next_states.append((action, action_score))
+
+            if is_max:
+                return max(next_states, key=get_action_score_tuple_score)
+            
+            return min(next_states, key=get_action_score_tuple_score)
+
+        return recursive_minimax(gameState, 0, 0)[0]
 
 def betterEvaluationFunction(currentGameState):
     """
