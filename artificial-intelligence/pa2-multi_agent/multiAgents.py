@@ -50,6 +50,11 @@ class ReflexAgent(Agent):
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
         "Add more of your code here if you want to"
+        # Prioritize current direction in tie
+        # current_direction = gameState.getPacmanState().getDirection()
+        # for i in bestIndices:
+        #     if scores[i] == current_direction:
+        #         return current_direction
 
         return legalMoves[chosenIndex]
 
@@ -81,6 +86,7 @@ class ReflexAgent(Agent):
         ate_food = 0
         food_remaining = 0 # Minimize this
         nearest_food_dist = None # Minimize this
+        manhatten_sum = 0
 
         for x in range(0,newFood.width):
             for y in range(0, newFood.height):
@@ -88,11 +94,22 @@ class ReflexAgent(Agent):
                     food_remaining += 1
 
                     manh_dist = abs(x - newPosX) + abs(y - newPosY)
+                    manhatten_sum += manh_dist
                     if nearest_food_dist is None or nearest_food_dist > manh_dist:
                         nearest_food_dist = manh_dist
 
-        return (nearest_food_dist/food_remaining) + childGameState.getScore()
-        #return (100/nearest_food_dist) + (100/food_remaining) + childGameState.getScore()
+        stop_tax = 0
+        if action == 'Stop':
+            stop_tax = -100
+
+        same_direction_bonus = 0
+        if action == currentGameState.getPacmanState().getDirection():
+            same_direction_bonus = 10
+
+        if manhatten_sum == 0: # game won
+            return childGameState.getScore() + 100
+
+        return ((100+same_direction_bonus)/manhatten_sum) + (100/food_remaining) + childGameState.getScore() + stop_tax
 
 def scoreEvaluationFunction(currentGameState):
     """
