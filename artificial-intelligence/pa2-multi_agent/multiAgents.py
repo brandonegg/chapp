@@ -298,21 +298,50 @@ def betterEvaluationFunction(currentGameState):
     # Should be on some sort of scale ([1000, -1000]) where 1000 is best case, -1000 is worst case
 
     if currentGameState.isWin():
-        return 1000
+        return 10000
     
     if currentGameState.isLose():
-        return -1000
+        return -10000
     
-    sum_manhattens = 0
+    man_dist_closest_food = None
     food_grid = currentGameState.getFood()
+    food_left = 0
     (pacman_x, pacman_y) = currentGameState.getPacmanPosition()
 
     for x in range(0, food_grid.width):
         for y in range(0, food_grid.height):
             if food_grid[x][y]:
-                sum_manhattens += abs(x-pacman_x) + abs(y-pacman_y)
+                food_left += 1
+                man_dist = abs(x-pacman_x) + abs(y-pacman_y)
 
-    return currentGameState.getScore() + (1000/sum_manhattens)
+                if man_dist_closest_food is None or man_dist_closest_food > man_dist:
+                    man_dist_closest_food = man_dist
+
+    man_dist_closest_non_scared_ghost = None
+    man_dist_closest_scared_ghost = None
+    for ghost in currentGameState.getGhostStates():
+        (x, y) = ghost.getPosition()
+        man_dist = abs(x-pacman_x) + abs(y-pacman_y)
+
+        if ghost.scaredTimer > 0:
+            if man_dist_closest_scared_ghost is None or man_dist < man_dist_closest_scared_ghost:
+                man_dist_closest_scared_ghost = man_dist
+        else:
+            if man_dist_closest_non_scared_ghost is None or man_dist < man_dist_closest_non_scared_ghost:
+                man_dist_closest_non_scared_ghost = man_dist
+
+    capsuls_left = len(currentGameState.getCapsules())
+
+    # base formula
+    base = currentGameState.getScore() + (-1)*man_dist_closest_food + (-5 * food_left) + (-20 * capsuls_left)
+
+    if man_dist_closest_non_scared_ghost is not None:
+        base += (-1/man_dist_closest_non_scared_ghost)
+
+    if man_dist_closest_scared_ghost is not None:
+        base += -5 * man_dist_closest_scared_ghost
+
+    return base
 
 # Abbreviation
 better = betterEvaluationFunction
