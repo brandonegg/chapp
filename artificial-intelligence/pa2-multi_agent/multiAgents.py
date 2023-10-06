@@ -48,12 +48,6 @@ class ReflexAgent(Agent):
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
         "Add more of your code here if you want to"
-        #Prioritize current direction in tie
-        # current_direction = gameState.getPacmanState().getDirection()
-        # for i in bestIndices:
-        #     if legalMoves[i] == current_direction:
-        #         print("prioritizing current direction")
-        #         return current_direction
 
         return legalMoves[chosenIndex]
 
