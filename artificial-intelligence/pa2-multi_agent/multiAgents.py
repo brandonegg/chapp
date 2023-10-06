@@ -164,7 +164,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         tree_height = 1 + (self.depth * gameState.getNumAgents())
 
-        def recursive(cur_game_state, agents_turn, tree_depth):
+        def recursive_minimax(cur_game_state, agents_turn, tree_depth):
             '''
             returns are tuple (action to take at given state, score you will receive)
             '''
@@ -180,7 +180,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             next_states = [] # (action to take, score you'll get)
             for action in legal_actions:
                 next_state = cur_game_state.getNextState(agents_turn, action)
-                (_, action_score) = recursive(next_state, next_agent, tree_depth+1)
+                (_, action_score) = recursive_minimax(next_state, next_agent, tree_depth+1)
                 next_states.append((action, action_score))
 
             if is_max:
@@ -188,7 +188,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             
             return min(next_states, key=get_action_score_tuple_score)
 
-        return recursive(gameState, 0, 0)[0]
+        return recursive_minimax(gameState, 0, 0)[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -200,7 +200,45 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        tree_height = 1 + (self.depth * gameState.getNumAgents())
+
+        def recursive_alpha_beta(cur_game_state, agents_turn, tree_depth, alpha, beta):
+            '''
+            returns (action to take at cur_game_state to get value, value)
+            '''
+            if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
+                return (None, cur_game_state.getScore())
+            
+            is_max = agents_turn == 0
+            next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
+            best_value = float('inf')
+            best_action = None
+
+            if is_max:
+                best_value = best_value * -1
+
+            for action in cur_game_state.getLegalActions(agents_turn):
+                next_state = cur_game_state.getNextState(agents_turn, action)
+                (_, next_value) = recursive_alpha_beta(next_state, next_agent, tree_depth+1, alpha, beta)
+
+                if is_max: # MAX_VALUE
+                    if next_value > best_value:
+                        best_value = next_value
+                        best_action = action
+                        alpha = max([best_value, alpha])
+                    if best_value > beta:
+                        return (best_action, best_value) # prune
+                else: # MIN_VALUE
+                    if next_value < best_value:
+                        best_value = next_value
+                        best_action = action
+                        beta = min([beta, best_value])
+                    if best_value < alpha:
+                        return (best_action, best_value) # prune
+
+            return (best_action, best_value)
+
+        return recursive_alpha_beta(gameState, 0, 0, -float('inf'), float('inf'))[0]
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
