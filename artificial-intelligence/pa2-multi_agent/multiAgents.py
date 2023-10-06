@@ -164,34 +164,31 @@ class MinimaxAgent(MultiAgentSearchAgent):
 
         tree_height = 1 + (self.depth * gameState.getNumAgents())
 
-        def recursive(cur_game_state, agents_turn, tree_depth, prev_action):
+        def recursive(cur_game_state, agents_turn, tree_depth):
+            '''
+            returns are tuple (action to take at given state, score you will receive)
+            '''
             is_max = agents_turn == 0
             next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
             legal_actions = cur_game_state.getLegalActions(agents_turn)
 
             # base case:
             if tree_depth == (tree_height - 1) or len(legal_actions) == 0:
-                return (prev_action, self.evaluationFunction(cur_game_state))
+                return (None, self.evaluationFunction(cur_game_state))
             
             # recursive case:
-            next_states = [] # (taken_action, next_state_score)
+            next_states = [] # (action to take, score you'll get)
             for action in legal_actions:
                 next_state = cur_game_state.getNextState(agents_turn, action)
-                action_score = recursive(next_state, next_agent, tree_depth+1, action)
-                next_states.append(action_score)
+                (_, action_score) = recursive(next_state, next_agent, tree_depth+1)
+                next_states.append((action, action_score))
 
-            new_action_score = min(next_states, key=get_action_score_tuple_score)
             if is_max:
-                new_action_score = max(next_states, key=get_action_score_tuple_score)
+                return max(next_states, key=get_action_score_tuple_score)
+            
+            return min(next_states, key=get_action_score_tuple_score)
 
-            if (prev_action == None):
-                return new_action_score
-
-            return (prev_action, new_action_score[1])
-
-        result = recursive(gameState, 0, 0, None)
-
-        return result[0]
+        return recursive(gameState, 0, 0)[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
