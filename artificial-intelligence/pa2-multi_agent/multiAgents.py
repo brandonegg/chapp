@@ -168,14 +168,13 @@ class MinimaxAgent(MultiAgentSearchAgent):
             '''
             returns are tuple (action to take at given state, score you will receive)
             '''
+            if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
+                return (None, cur_game_state.getScore())
+
             is_max = agents_turn == 0
             next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
             legal_actions = cur_game_state.getLegalActions(agents_turn)
 
-            # base case:
-            if tree_depth == (tree_height - 1) or len(legal_actions) == 0:
-                return (None, self.evaluationFunction(cur_game_state))
-            
             # recursive case:
             next_states = [] # (action to take, score you'll get)
             for action in legal_actions:
