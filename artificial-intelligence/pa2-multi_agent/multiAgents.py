@@ -159,44 +159,38 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        def action_score(e):
+        def get_action_score_tuple_score(e):
             return e[1]
 
         tree_height = 1 + (self.depth * gameState.getNumAgents())
-        print(f"max tree height = {tree_height}")
 
-        def recursive(cur_game_state, agents_turn, tree_depth):
-            print(f"agents_turn = {agents_turn}, at depth = {tree_depth}")
-            agent_count = cur_game_state.getNumAgents()
+        def recursive(cur_game_state, agents_turn, tree_depth, prev_action):
             is_max = agents_turn == 0
-
+            next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
             legal_actions = cur_game_state.getLegalActions(agents_turn)
-            print(f"has {len(legal_actions)} possible legal actions to choose from")
 
-            action_scores = [] # (action, score_received)
+            # base case:
+            if tree_depth == (tree_height - 1) or len(legal_actions) == 0:
+                return (prev_action, self.evaluationFunction(cur_game_state))
+            
+            # recursive case:
+            next_states = [] # (taken_action, next_state_score)
             for action in legal_actions:
                 next_state = cur_game_state.getNextState(agents_turn, action)
-                if tree_depth == (tree_height - 1):
-                    action_scores.append((action, self.evaluationFunction(next_state)))
-                else:
-                    next_agent = (agents_turn + 1)%agent_count
-                    if len(next_state.getLegalActions(next_agent)) > 0:
-                        score = recursive(next_state, next_agent, tree_depth+1)
-                        action_scores.append((action, score))
+                action_score = recursive(next_state, next_agent, tree_depth+1, action)
+                next_states.append(action_score)
 
-            print(action_scores)
-
-            if len(action_scores) == 0:
-                return ('Left',0)
-
+            new_action_score = min(next_states, key=get_action_score_tuple_score)
             if is_max:
-                return max(action_scores, key=action_score)
-            
-            return min(action_scores, key=action_score)
+                new_action_score = max(next_states, key=get_action_score_tuple_score)
 
-        result = recursive(gameState, 0, 0)
+            if (prev_action == None):
+                return new_action_score
 
-        print(result)
+            return (prev_action, new_action_score[1])
+
+        result = recursive(gameState, 0, 0, None)
+
         return result[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
