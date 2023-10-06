@@ -288,14 +288,37 @@ def betterEvaluationFunction(currentGameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: I decided to prioritize the following features for my
+    evaluation function:
+
+      - Current Game Score: Since score accounts for time taken I found it to
+        help incentivize pacman to keep moving. It also is the value this question
+        will be graded on so maximizing it is essential.
+      
+      - Manhatten Distance to Closest Food: I assign this value a negative weight
+        to convince pacman to move closer to the nearest food since eating the nearest
+        food increases score. (such that as pacman gets closer to nearest food, score increases)
+      
+      - Food Left: I assigned this value a weight of -5 (greater than manhatten distance)
+        as I found it worked best. I knew the weight needed to be enough to outweight the 
+        cost that will occur when Pacman eats the nearest food since the next new nearest 
+        food may be much furthur
+
+      - Capsuls Left: I give this a large weight, since eating a capsul gives pacman
+        the chance to eat a ghost and when Pacman eats a ghost he gets a lot of points.
+
+      - Manhatten Distance to Closest Scared/Non-Scared ghost: For non-scared ghosts (deadly)
+        I inverse this value unlike nearest food to promote pacman staying away from the ghost.
+        However, I keep this weight small since the threat of a ghost nearby is not necessarily
+        going to hurt your score much. I give a large weight of -5 to the distance to the closest
+        scared ghost (I don't inverse this value) since we want pacman to go towards a scared ghost
+        as it will receive a lot of points.
+
+    Lastly, since some computations can't be performed when the game is terminated, I had a case
+    to check if they have won or loss, and return and arbitrarily large number (positive if won, negative if loss)
+    to ensure pacman will always pick the state that wins and avoid the state that loses.
     """
     "*** YOUR CODE HERE ***"
-    # Things to priotize
-    # Reach win state
-    # Avoid lose state
-    # Minimize food distances
-    # Should be on some sort of scale ([1000, -1000]) where 1000 is best case, -1000 is worst case
 
     if currentGameState.isWin():
         return 10000
