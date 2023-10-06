@@ -169,7 +169,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
             returns are tuple (action to take at given state, score you will receive)
             '''
             if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
-                return (None, cur_game_state.getScore())
+                return (None, self.evaluationFunction(cur_game_state))
 
             is_max = agents_turn == 0
             next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
@@ -206,7 +206,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
             returns (action to take at cur_game_state to get value, value)
             '''
             if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
-                return (None, cur_game_state.getScore())
+                return (None, self.evaluationFunction(cur_game_state))
             
             is_max = agents_turn == 0
             next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
@@ -262,7 +262,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
             returns are tuple (action to take at given state, score you will receive)
             '''
             if cur_game_state.isWin() or cur_game_state.isLose() or tree_depth == (tree_height-1):
-                return (None, cur_game_state.getScore())
+                return (None, self.evaluationFunction(cur_game_state))
 
             is_pacman = agents_turn == 0
             next_agent = (agents_turn + 1) % cur_game_state.getNumAgents()
@@ -291,7 +291,31 @@ def betterEvaluationFunction(currentGameState):
     DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()    
+    # Things to priotize
+    # Reach win state
+    # Avoid lose state
+    # Minimize food distances
+    # Should be on some sort of scale ([1000, -1000]) where 1000 is best case, -1000 is worst case
+
+    if currentGameState.isWin():
+        print("Win!")
+        return 1000
+    
+    if currentGameState.isLose():
+        print("Loss :(")
+        return -1000
+    
+    sum_manhattens = 0
+    food_grid = currentGameState.getFood()
+    (pacman_x, pacman_y) = currentGameState.getPacmanPosition()
+
+    for x in range(0, food_grid.width):
+        for y in range(0, food_grid.height):
+            if food_grid[x][y]:
+                sum_manhattens += abs(x-pacman_x) + abs(y-pacman_y)
+
+    print("using better eval")
+    return currentGameState.getScore() - (1000/sum_manhattens)
 
 # Abbreviation
 better = betterEvaluationFunction
