@@ -159,7 +159,45 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def action_score(e):
+            return e[1]
+
+        tree_height = 1 + (self.depth * gameState.getNumAgents())
+        print(f"max tree height = {tree_height}")
+
+        def recursive(cur_game_state, agents_turn, tree_depth):
+            print(f"agents_turn = {agents_turn}, at depth = {tree_depth}")
+            agent_count = cur_game_state.getNumAgents()
+            is_max = agents_turn == 0
+
+            legal_actions = cur_game_state.getLegalActions(agents_turn)
+            print(f"has {len(legal_actions)} possible legal actions to choose from")
+
+            action_scores = [] # (action, score_received)
+            for action in legal_actions:
+                next_state = cur_game_state.getNextState(agents_turn, action)
+                if tree_depth == (tree_height - 1):
+                    action_scores.append((action, self.evaluationFunction(next_state)))
+                else:
+                    next_agent = (agents_turn + 1)%agent_count
+                    if len(next_state.getLegalActions(next_agent)) > 0:
+                        score = recursive(next_state, next_agent, tree_depth+1)
+                        action_scores.append((action, score))
+
+            print(action_scores)
+
+            if len(action_scores) == 0:
+                return ('Left',0)
+
+            if is_max:
+                return max(action_scores, key=action_score)
+            
+            return min(action_scores, key=action_score)
+
+        result = recursive(gameState, 0, 0)
+
+        print(result)
+        return result[0]
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
