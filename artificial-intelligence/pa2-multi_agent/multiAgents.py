@@ -298,11 +298,9 @@ def betterEvaluationFunction(currentGameState):
     # Should be on some sort of scale ([1000, -1000]) where 1000 is best case, -1000 is worst case
 
     if currentGameState.isWin():
-        print("Win!")
         return 1000
     
     if currentGameState.isLose():
-        print("Loss :(")
         return -1000
     
     sum_manhattens = 0
@@ -314,8 +312,7 @@ def betterEvaluationFunction(currentGameState):
             if food_grid[x][y]:
                 sum_manhattens += abs(x-pacman_x) + abs(y-pacman_y)
 
-    print("using better eval")
-    return currentGameState.getScore() - (1000/sum_manhattens)
+    return currentGameState.getScore() + (1000/sum_manhattens)
 
 # Abbreviation
 better = betterEvaluationFunction
