@@ -1,5 +1,6 @@
 from pgclient import PGClient
 from exceptions import CommandNotFoundException, InvalidCommandFormatException
+import time
 
 class Command:
   def __init__(self, label, description, callback, args: dict[str, str] | None):
@@ -9,7 +10,10 @@ class Command:
     self.args = args
 
   def call(self, args):
-    self.callback(**args)
+    try:
+      self.callback(**args)
+    except Exception as e:
+      print(f"Error: {e}")
 
   def __repr__(self):
     base = f"{self.label} - {self.description}"
@@ -27,6 +31,9 @@ class CLISession:
     self.pg_client = pg_client
     self.commands = [Command("countries:list", "List all available countries", self.pg_client.print_all_countries, None),
                      Command("cities:list", "List cities matching arguments", self.pg_client.print_cities, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("cities:create", "Create a new city", self.pg_client.create_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("cities:update", "Update a city's name", self.pg_client.update_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("cities:delete", "Delete one or many cities", self.pg_client.delete_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("exit", "Exit the application", self.__exit, None)]
     
     self.__main_routine()
@@ -34,6 +41,7 @@ class CLISession:
   def __main_routine(self):
     self.__output_commands()
     self.__await_response()
+    time.sleep(5)
     self.__main_routine()
 
   def __await_response(self):

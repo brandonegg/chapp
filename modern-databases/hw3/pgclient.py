@@ -23,6 +23,8 @@ class PGClient:
                                        host = host,
                                        port = port,
                                        database = db_name)
+    
+    self.connection.autocommit = True
 
   def print_all_countries(self):
     with self.connection.cursor() as cursor:
@@ -57,11 +59,20 @@ class PGClient:
 
       print("Cities:")
       print("")
-      print(', '.join(cities))
+      print(', '.join([str(city) for city in cities]))
 
-  def update_city(self, postal=None, country=None, name=None):
-    # TODO:
-    pass
+  def create_city(self, postal, country, name):
+    print(len(country))
+    with self.connection.cursor() as cursor:
+      cursor.execute(f"INSERT INTO homework.cities (name, country_code, postal_code) VALUES ('{name}', '{country}', '{postal}')")
+
+      print(f"Success! New city added: ({name}, {country}, {postal})")
+
+  def update_city(self, postal, country, name):
+    with self.connection.cursor() as cursor:
+      cursor.execute(f"UPDATE homework.cities SET (name) = ({name}) WHERE (country_code = {country} AND postal_code = {postal})")
+
+      print(f"Successfully updated name to: {name}")
 
   def delete_city(self, postal=None, country=None, name=None):
     # TODO
