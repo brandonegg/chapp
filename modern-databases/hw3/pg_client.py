@@ -1,4 +1,4 @@
-from exceptions import InvalidCredentialFileException
+from exceptions import InvalidCredentialFileException, NoEntityResultsFound
 from queries import QueryBuilder
 from helpers import cli_user_confirm_action
 import psycopg2
@@ -84,7 +84,7 @@ class PGClient:
     '''
     delete_cities = self.select_cities(postal, country, name)
     if len(delete_cities) == 0:
-      raise "No cities found with provided criteria"
+      raise NoEntityResultsFound("city")
 
     print("The following cities will be deleted:")
     print(', '.join([str(city) for city in delete_cities]))
@@ -113,7 +113,7 @@ class PGClient:
       cursor.execute(query_str)
 
   def list_venues_active_cli(self, country: str):
-    venues = self.list_venues(True, country)
+    venues = self.select_venues(True, country)
     print("Venues:")
     print("")
     if len(venues) == 0:
@@ -121,24 +121,28 @@ class PGClient:
     print(', '.join([str(venue) for venue in venues]))
 
   def list_venues_inactive_cli(self):
-    venues = self.list_venues(False, None)
+    venues = self.select_venues(False, None)
     print("Venues:")
     print("")
     if len(venues) == 0:
       print("No inactive venues found")
     print(', '.join([str(venue) for venue in venues]))
 
-  def list_venues(self, active: bool, country: str | None = None):
+  def select_venues(self, active: bool | None = None, country: str | None = None, name: str | None = None):
     query = QueryBuilder()
     query.select("homework.venues", ["venue_id", "name", "street_address", "type", "postal_code", "country_code"])
 
     if country is not None:
       query.where(f"country_code = '{country}'")
 
-    if active:
-      query.where(f"NOT inactive")
-    else:
-      query.where(f"inactive")
+    if active is not None:
+      if active:
+        query.where(f"NOT inactive")
+      else:
+        query.where(f"inactive")
+
+    if name is not None:
+      query.where(f"name = '{name}'")
 
     query_str = query.end()
 
@@ -147,8 +151,28 @@ class PGClient:
 
       return cursor.fetchall()
 
-  def delete_venue_confirm_cli(self):
-    pass
+  def delete_venue_confirm_cli(self, name: str):
+    delete_venues = self.select_venues(name=name)
+    if len(delete_venues) == 0:
+      raise NoEntityResultsFound("venue")
+    
+    print("The following venues will be deleted:")
+    print(', '.join([str(venue) for venue in delete_venues]))
 
-  def delete_venue(self):
-    pass
+    should_delete = cli_user_confirm_action("Confirm deletion of the venues above?")
+    if not should_delete:
+      raise Exception('User cancelled')
+    
+    self.delete_venue(name)
+    print(f"successfully deleted {len(delete_venues)} entries")
+
+  def delete_venue(self, name: str):
+    query = QueryBuilder()
+
+    query.delete("homework.venues")
+    query.where(f"name = '{name}'")
+
+    query_str = query.end()
+
+    with self.connection.cursor() as cursor:
+      cursor.execute(query_str)

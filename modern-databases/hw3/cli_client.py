@@ -67,7 +67,7 @@ class CLISession:
     args = {}
 
     if len(split_input) > 2:
-      raise InvalidCommandFormatException
+      split_input[1] = ' '.join(split_input[1:])
     elif len(split_input) == 1:
       return (split_input[0], args)
 
