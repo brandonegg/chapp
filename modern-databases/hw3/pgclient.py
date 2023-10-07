@@ -70,7 +70,7 @@ class PGClient:
 
   def update_city(self, postal, country, name):
     with self.connection.cursor() as cursor:
-      cursor.execute(f"UPDATE homework.cities SET (name) = ({name}) WHERE (country_code = {country} AND postal_code = {postal})")
+      cursor.execute(f"UPDATE homework.cities SET name = '{name}' WHERE (country_code = '{country}' AND postal_code = '{postal}')")
 
       print(f"Successfully updated name to: {name}")
 
