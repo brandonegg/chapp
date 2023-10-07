@@ -34,6 +34,9 @@ class CLISession:
                      Command("cities:create", "Create a new city", self.pg_client.create_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("cities:update", "Update a city's name", self.pg_client.update_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("cities:delete", "Delete one or many cities", self.pg_client.delete_city_cli, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("venues:active:list", "List active venues based on search criteria", self.pg_client.list_venues_active_cli, {"country": "country code"}),
+                     Command("venues:inactive:list", "List all inactive venues", self.pg_client.list_venues_inactive_cli, None),
+                     Command("venues:delete", "Delete a venue by name", self.pg_client.delete_venue_confirm_cli, {"name": "Name of venue (case sensitive)"}),
                      Command("exit", "Exit the application", self.__exit, None)]
     
     self.__main_routine()

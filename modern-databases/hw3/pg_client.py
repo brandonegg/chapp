@@ -111,3 +111,44 @@ class PGClient:
 
     with self.connection.cursor() as cursor:
       cursor.execute(query_str)
+
+  def list_venues_active_cli(self, country: str):
+    venues = self.list_venues(True, country)
+    print("Venues:")
+    print("")
+    if len(venues) == 0:
+      print("No matches found for criteria")
+    print(', '.join([str(venue) for venue in venues]))
+
+  def list_venues_inactive_cli(self):
+    venues = self.list_venues(False, None)
+    print("Venues:")
+    print("")
+    if len(venues) == 0:
+      print("No inactive venues found")
+    print(', '.join([str(venue) for venue in venues]))
+
+  def list_venues(self, active: bool, country: str | None = None):
+    query = QueryBuilder()
+    query.select("homework.venues", ["venue_id", "name", "street_address", "type", "postal_code", "country_code"])
+
+    if country is not None:
+      query.where(f"country_code = '{country}'")
+
+    if active:
+      query.where(f"NOT inactive")
+    else:
+      query.where(f"inactive")
+
+    query_str = query.end()
+
+    with self.connection.cursor() as cursor:
+      cursor.execute(query_str)
+
+      return cursor.fetchall()
+
+  def delete_venue_confirm_cli(self):
+    pass
+
+  def delete_venue(self):
+    pass
