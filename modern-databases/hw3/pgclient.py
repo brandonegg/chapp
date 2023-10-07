@@ -1,4 +1,5 @@
 from exceptions import InvalidCredentialFileException
+from queries import QueryBuilder
 import psycopg2
 
 class Credentials:
@@ -37,28 +38,27 @@ class PGClient:
       print(', '.join(formatted_country_str))
 
   def print_cities(self, postal=None, country=None, name=None):
-    use_and = False
-    query = 'SELECT name, postal_code, country_code FROM homework.cities'
-
+    query = QueryBuilder()
+    query.select("homework.cities", ["name", "postal_code", "country_code"])
+      
     options = [("postal_code", postal), ("country_code", country), ("name", name)]
     for (column, value) in options:
       if value is None:
         continue
+  
+      query.where(f"{column} = '{value}'")
 
-      if use_and:
-        query += ' AND'
-      else:
-        query += ' WHERE'
-        use_and = True
-
-      query += f" {column} = '{value}'"
+    query_str = query.end()
+    print(query_str)
 
     with self.connection.cursor() as cursor:
-      cursor.execute(query)
+      cursor.execute(query_str)
       cities = cursor.fetchall()
 
       print("Cities:")
       print("")
+      if len(cities) == 0:
+        print("No matches found for criteria")
       print(', '.join([str(city) for city in cities]))
 
   def create_city(self, postal, country, name):
