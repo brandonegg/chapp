@@ -3,6 +3,9 @@ class QueryBuilder:
     self.query = ''
     self.use_and = False
 
+  def delete(self, table):
+    self.query += f"DELETE FROM {table}"
+
   def select(self, table, columns: list | str):
     if type(columns) == list:
       columns = ','.join(columns)

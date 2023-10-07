@@ -1,4 +1,4 @@
-from pgclient import PGClient
+from pg_client import PGClient
 from exceptions import CommandNotFoundException, InvalidCommandFormatException
 import time
 
@@ -30,10 +30,10 @@ class CLISession:
   def __init__(self, pg_client: PGClient):
     self.pg_client = pg_client
     self.commands = [Command("countries:list", "List all available countries", self.pg_client.print_all_countries, None),
-                     Command("cities:list", "List cities matching arguments", self.pg_client.print_cities, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("cities:list", "List cities matching arguments", self.pg_client.list_cities_cli, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("cities:create", "Create a new city", self.pg_client.create_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("cities:update", "Update a city's name", self.pg_client.update_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
-                     Command("cities:delete", "Delete one or many cities", self.pg_client.delete_city, {"postal": "postal code", "country": "country code", "name": "city name"}),
+                     Command("cities:delete", "Delete one or many cities", self.pg_client.delete_city_cli, {"postal": "postal code", "country": "country code", "name": "city name"}),
                      Command("exit", "Exit the application", self.__exit, None)]
     
     self.__main_routine()

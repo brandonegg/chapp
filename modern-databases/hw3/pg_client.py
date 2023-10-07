@@ -1,5 +1,6 @@
 from exceptions import InvalidCredentialFileException
 from queries import QueryBuilder
+from helpers import cli_user_confirm_action
 import psycopg2
 
 class Credentials:
@@ -37,7 +38,7 @@ class PGClient:
       print("")
       print(', '.join(formatted_country_str))
 
-  def print_cities(self, postal=None, country=None, name=None):
+  def select_cities(self, postal=None, country=None, name=None):
     query = QueryBuilder()
     query.select("homework.cities", ["name", "postal_code", "country_code"])
       
@@ -49,17 +50,20 @@ class PGClient:
       query.where(f"{column} = '{value}'")
 
     query_str = query.end()
-    print(query_str)
 
     with self.connection.cursor() as cursor:
       cursor.execute(query_str)
       cities = cursor.fetchall()
+      return cities
 
-      print("Cities:")
-      print("")
-      if len(cities) == 0:
-        print("No matches found for criteria")
-      print(', '.join([str(city) for city in cities]))
+  def list_cities_cli(self, postal=None, country=None, name=None):
+    cities = self.select_cities(postal, country, name)
+
+    print("Cities:")
+    print("")
+    if len(cities) == 0:
+      print("No matches found for criteria")
+    print(', '.join([str(city) for city in cities]))
 
   def create_city(self, postal, country, name):
     print(len(country))
@@ -74,7 +78,36 @@ class PGClient:
 
       print(f"Successfully updated name to: {name}")
 
+  def delete_city_cli(self, postal=None, country=None, name=None):
+    '''
+    Delete city with confirmation prompt
+    '''
+    delete_cities = self.select_cities(postal, country, name)
+    if len(delete_cities) == 0:
+      raise "No cities found with provided criteria"
+
+    print("The following cities will be deleted:")
+    print(', '.join([str(city) for city in delete_cities]))
+
+    should_delete = cli_user_confirm_action("Confirm deletion of the cities above?")
+    if not should_delete:
+      raise Exception('User cancelled')
+
+    self.delete_city(postal, country, name)
+    print(f"successfully deleted {len(delete_cities)} entries")
+
   def delete_city(self, postal=None, country=None, name=None):
-    # TODO
-    # select and display all effected rows then ask user to confirm with y/n prompt
-    pass
+    query = QueryBuilder()
+    query.delete("homework.cities")
+
+    options = [("postal_code", postal), ("country_code", country), ("name", name)]
+    for (column, value) in options:
+      if value is None:
+        continue
+  
+      query.where(f"{column} = '{value}'")
+
+    query_str = query.end()
+
+    with self.connection.cursor() as cursor:
+      cursor.execute(query_str)

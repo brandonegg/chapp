@@ -1,7 +1,7 @@
 from exceptions import InvalidCredentialFileException
-from pgclient import PGClient
+from pg_client import PGClient
 from psycopg2 import OperationalError
-from cli import CLISession
+from cli_client import CLISession
 
 CREDENTIALS_PATH = './credentials.txt'
 DB_NAME = 'mdb_student06'
