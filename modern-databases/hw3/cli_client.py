@@ -102,7 +102,7 @@ class CLISession:
     print("| Command Table                    |")
     print("------------------------------------")
     print("| Format:  {command name | index} {arg1=arg1_value},{arg2=arg2_value},...")
-    print("| Example: 'cities:list postal=52240,name=Iowa'")
+    print("| Example: 'cities:list postal=52240,name=Iowa City'")
     print("|")
 
     for i, command in enumerate(self.commands):
