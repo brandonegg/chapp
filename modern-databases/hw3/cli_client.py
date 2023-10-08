@@ -37,6 +37,7 @@ class CLISession:
                      Command("venues:active:list", "List active venues based on search criteria", self.pg_client.list_venues_active_cli, {"country": "country code"}),
                      Command("venues:inactive:list", "List all inactive venues", self.pg_client.list_venues_inactive_cli, None),
                      Command("venues:delete", "Delete a venue by name", self.pg_client.delete_venue_confirm_cli, {"name": "Name of venue (case sensitive)"}),
+                     Command("event:create", "Create a new event", self.pg_client.add_event_cli, {"title": "Event title", "starts": "event start timestamp", "ends": "event end timestamp", "venue_name": "Name of venue event is at", "postal": "postal code", "country": "Country code"}),
                      Command("exit", "Exit the application", self.__exit, None)]
     
     self.__main_routine()

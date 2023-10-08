@@ -176,3 +176,12 @@ class PGClient:
 
     with self.connection.cursor() as cursor:
       cursor.execute(query_str)
+
+  def add_event_cli(self, title: str, starts: str, ends: str, venue_name: str, postal: str, country: str):
+    query_str = f"SELECT add_event('{title}', '{starts}', '{ends}', '{venue_name}', '{postal}', '{country}')"
+
+    with self.connection.cursor() as cursor:
+      cursor.execute("SET schema 'homework'")
+      cursor.execute(query_str)
+
+      print("Successfully created event!")
