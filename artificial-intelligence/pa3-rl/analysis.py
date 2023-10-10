@@ -20,37 +20,37 @@
 # value iteration.
 
 def question2a():
-    answerDiscount = None
-    answerNoise = None
-    answerLivingReward = None
+    answerDiscount = 0.1 # smaller answer okay
+    answerNoise = 0 # maximize liklihood of going in correct direction (not falling in cliff)
+    answerLivingReward = 0.1 # maximize living less (faster answer)
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
 def question2b():
-    answerDiscount = None
-    answerNoise = None
-    answerLivingReward = None
+    answerDiscount = 0.1 # discount enough to not care much about 10, but enough to care about -10
+    answerNoise = 0.1 # Introduce some noise to add risk to taking the short path (-10)
+    answerLivingReward = 0.8 # incentivize living longer (to compensate for smaller reward of 1.0)
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
 def question2c():
-    answerDiscount = None
-    answerNoise = None
-    answerLivingReward = None
+    answerDiscount = 0.9 # Provide more weight to the next state
+    answerNoise = 0 # Prevent any risk of falling -10
+    answerLivingReward = 0.1
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
 def question2d():
-    answerDiscount = None
-    answerNoise = None
-    answerLivingReward = None
+    answerDiscount = 0.9
+    answerNoise = 0.1 # Similar to question C, but introduce noise.
+    answerLivingReward = 0.1
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
 def question2e():
-    answerDiscount = None
-    answerNoise = None
-    answerLivingReward = None
+    answerDiscount = 0
+    answerNoise = 0.5
+    answerLivingReward = 10 # Greater than highest reward, exit will always be  0
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
