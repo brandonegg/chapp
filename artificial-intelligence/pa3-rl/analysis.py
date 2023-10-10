@@ -48,9 +48,9 @@ def question2d():
     # If not possible, return 'NOT POSSIBLE'
 
 def question2e():
-    answerDiscount = 0
-    answerNoise = 0.5
-    answerLivingReward = 10 # Greater than highest reward, exit will always be  0
+    answerDiscount = 0 # discount future state, so there is no value in moving anywhere
+    answerNoise = 0
+    answerLivingReward = 1
     return answerDiscount, answerNoise, answerLivingReward
     # If not possible, return 'NOT POSSIBLE'
 
