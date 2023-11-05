@@ -5,13 +5,13 @@
 #include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
-
-
 typedef struct{
     unsigned short tid;
     unsigned short challenge;
+    unsigned short nthreads;
 } tinput_t;
 
+pthread_rwlock_t rwlock;
 
 unsigned int NSOLUTIONS = 8;
 
@@ -53,19 +53,30 @@ short try_solution(unsigned short challenge, unsigned long attempted_solution){
 void* worker_thread_function(void *tinput_void){
     tinput_t* tinput = (tinput_t*) tinput_void;
 
-    unsigned long start = 0;
+    unsigned long start = tinput->tid;
     unsigned long end = start + 1000000000l;
-    for(unsigned long attempted_solution=start; attempted_solution<end; attempted_solution++){
-        
+
+    for(unsigned long attempted_solution=start; attempted_solution<end; attempted_solution += (tinput->nthreads)){
+        pthread_rwlock_wrlock(&rwlock);
+        if(found_solutions==NSOLUTIONS) {
+            pthread_rwlock_unlock(&rwlock);
+            return NULL;
+        }
+        pthread_rwlock_unlock(&rwlock);
+
         //condition1: sha256(attempted_solution) == challenge
         if(try_solution(tinput->challenge, attempted_solution)){
             //condition2: the last digit must be different in all the solutions
             short bad_solution = 0;
+
+            pthread_rwlock_wrlock(&rwlock);
             for(int i=0;i<found_solutions;i++){
                 if(attempted_solution%10 == solutions[i]%10){
                     bad_solution = 1;
                 }
             }
+            pthread_rwlock_unlock(&rwlock);
+
             if(bad_solution){
                 continue;
             }
@@ -75,12 +86,10 @@ void* worker_thread_function(void *tinput_void){
                 continue;
             }
 
+            pthread_rwlock_wrlock(&rwlock);
             solutions[found_solutions] = attempted_solution;
             found_solutions++;
-
-            if(found_solutions==NSOLUTIONS){
-                return NULL;
-            }
+            pthread_rwlock_unlock(&rwlock);
         }
     }
 }
@@ -99,6 +108,7 @@ void solve_one_challenge(unsigned short challenge, unsigned short nthread){
     for(int i=0; i<nthread; i++){
         inputs[i].tid = i;
         inputs[i].challenge = challenge;
+        inputs[i].nthreads = nthread;
         pthread_create(&(th[i]), NULL, worker_thread_function, &(inputs[i]));
     }
 
@@ -120,10 +130,14 @@ int main(int argc, char* argv[]) {
     //the other arguments are the challenges we must solve
     unsigned short nthread = strtol(argv[1],NULL,10);
 
+    pthread_rwlock_init(&rwlock, NULL);
+
     for(int i = 2; i<argc; i++){
         unsigned short challenge = strtol(argv[i],NULL,10);
         solve_one_challenge(challenge, nthread);
     }
+
+    pthread_rwlock_destroy(&rwlock);
 
     return 0;
 }
