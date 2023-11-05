@@ -57,7 +57,7 @@ void* worker_thread_function(void *tinput_void){
     unsigned long end = start + 1000000000l;
 
     for(unsigned long attempted_solution=start; attempted_solution<end; attempted_solution += (tinput->nthreads)){
-        pthread_rwlock_wrlock(&rwlock);
+        pthread_rwlock_rdlock(&rwlock);
         if(found_solutions==NSOLUTIONS) {
             pthread_rwlock_unlock(&rwlock);
             return NULL;
@@ -66,27 +66,30 @@ void* worker_thread_function(void *tinput_void){
 
         //condition1: sha256(attempted_solution) == challenge
         if(try_solution(tinput->challenge, attempted_solution)){
-            //condition2: the last digit must be different in all the solutions
-            short bad_solution = 0;
-
-            pthread_rwlock_wrlock(&rwlock);
-            for(int i=0;i<found_solutions;i++){
-                if(attempted_solution%10 == solutions[i]%10){
-                    bad_solution = 1;
-                }
-            }
-            pthread_rwlock_unlock(&rwlock);
-
-            if(bad_solution){
-                continue;
-            }
-
             //condition3: no solution should be divisible by any number in the range [1000000, 1500000]
             if(!divisibility_check(attempted_solution)){
                 continue;
             }
 
             pthread_rwlock_wrlock(&rwlock);
+            if (found_solutions == NSOLUTIONS) {
+                pthread_rwlock_unlock(&rwlock);
+                return NULL;
+            }
+
+            //condition2: the last digit must be different in all the solutions
+            short bad_solution = 0;
+            for(int i=0;i<found_solutions;i++){
+                if(attempted_solution%10 == solutions[i]%10){
+                    continue;
+                }
+            }
+
+            if (bad_solution) {
+                pthread_rwlock_unlock(&rwlock);
+                continue;
+            }
+
             solutions[found_solutions] = attempted_solution;
             found_solutions++;
             pthread_rwlock_unlock(&rwlock);
