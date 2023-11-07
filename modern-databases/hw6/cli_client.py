@@ -30,6 +30,7 @@ class CLISession:
   def __init__(self, db_client: MongoDBClient):
     self.db = db_client
     self.commands = [Command("nearest", "List nearest businesses to a given latitude longitude pair.", self.db.find_nearest, {"lat": "Latitude value", "lon": "Longitude value"}),
+                     Command("create:review", "Create a new review for a specific business", self.db.write_review, {"id": "ID of business", "score": "Score of review"}),
                      Command("exit", "Exit the application", self.__exit, None)]
     
     self.__main_routine()

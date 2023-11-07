@@ -41,5 +41,34 @@ class MongoDBClient():
       print(i)
       print("")
 
+  def write_review(self, id: str, score: int):
+    if not score in [str(i) for i in range(0, 6)]:
+      print("Invalid score value. Score must be an integer between 0 and 5")
+      return
+    
+    score_int = int(score)
+
+    business = self.database['business'].find_one({"business_id": id})
+    if (business is None):
+      print("No business found with the provided ID")
+      return
+
+    new_stars = (business['stars'] * business['review_count'] + score_int) / (business['review_count'] + 1)
+
+    self.database['business'].update_one({"business_id": id}, {
+      '$set': {
+        'review_count': business['review_count'] + 1,
+        'stars': new_stars,
+      }
+    })
+
+    self.database['reviews'].insert_one({
+      'business_id': id,
+      'score': score_int,
+    })
+
+    print("Review successfully added!")
+    print(f"New business rating for {id} is {new_stars} stars")
+
   def close(self):
     self.mongodb_client.close()
