@@ -103,5 +103,6 @@ class CLISession:
     print("|")
 
   def __exit(self):
-    print("Exiting application and closing the PostgreSQL connection")
+    print("Exiting application and closing the MongoDB connection")
+    self.db.close()
     exit(0)
