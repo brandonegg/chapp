@@ -3,13 +3,61 @@ import socket
 import threading
 from Log import Log
 import time
+from exceptions import UnparsableRequestException
+from request import ChatAppRequest
+
+class ClientMap():
+    def __init__(self):
+        self.__address_socket_map = {}
+
+    def add_client(self, socket, username):
+        pass # TODO: Throw error if username already taken
+
+class ChatServer():
+    def __init__(self):
+        self.socket_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.clients = ClientMap()
+
+    def listen_to(self, port: int):
+        self.__bind_socket_in(port)
+        self.__request_handler_loop()
+
+    def handle_request(self, client_socket: socket.socket, client_address: socket._RetAddress):
+        try:
+            request = ChatAppRequest(client_socket.recv(1024).decode())
+        except UnparsableRequestException:
+            pass # TODO: handle exception
+
+    def __request_handler_loop(self):
+        while True:
+            client_socket, client_address = self.socket_in.accept()
+            client_thread = threading.Thread(target=self.handle_request, args=(client_socket, client_address))
+            client_thread.start() 
+
+    def __bind_socket_in(self, port):
+        self.socket_in.bind(("0.0.0.0", port))
+
+if __name__ == "__main__":
+    server = ChatServer()
+    server.listen_to(10000) # TODO: pass by CLI arg instead
+
+
+
+
+
+
+
+
+
+
+
 
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 log = Log()
 
 
-server_socket.bind(("0.0.0.0", 10000))
+server_socket.bind(("0.0.0.0", 3000))
 
 server_socket.listen()
 log.info("Server is listening for incoming connections...")
