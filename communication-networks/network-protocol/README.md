@@ -7,16 +7,30 @@ The protocol has the following format:
 **Request:**
 ```
 <ACTION>\t<FROM>-><TO>
-status: <STATUS_CODE>
-message: <STRING>
+status:<STATUS_CODE>
+message:<STRING>
 ```
 
-**Response:**
+The first line of the request is called the *Action Line*, it is intended to specify the entire purpose of the data being sent and where it should go.
+- ACTION = INTRODUCE|POST|RESPOND|DISCONNECT
+- FROM = username of sending node
+- TO = username of receiving node
+
+
+Lines below this first line are called "fields" and are conditionally added based on action type.
 ```
-{type=INTRODUCE|POST}\t{username field}
-timestamp: str-iso format
-message: str
+<field>:<value>
 ```
+
+For actions POST the following fields are required:
+- message: The message being sent in the regular expression format: ".*+"
+
+
+For actions RESPOND the following fields are required:
+- status: A number representing the status of the previous request.
+
+
+Actions INTRODUCE and DISCONNECT have no required fields.
 
 
 ### MISC notes to find a home for:
