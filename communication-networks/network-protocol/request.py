@@ -1,33 +1,141 @@
-import exceptions
+from exceptions import UnparsableRequestException
 
-REQUEST_TYPES = ["INTRODUCE", "POST", "GOODBYE"]
+REQUEST_TYPE_REQUIRED_FIELD_MAPS = {
+    "INTRODUCE": {},
+    "RESPONSE": {"status"},
+    "POST": {"message"},
+    "GOODBYE": {}
+}
+
 STATUS_CODE_MAP = {
-    100: "POST_ACK", # TRANSPORT SUCCESS 100-199
-    102: "INTRODUCE_ACK",
-    103: "GOODBYE_ACK",
-    200: "POST_NACK", # TRANSPORT ERRORS 200-299
-    201: "GOODBYE_NACK",
-    202: "INTRODUCE_NACK",
+    100: "SUCCESS", # TRANSPORT SUCCESS 100-199
+    200: "UNPARSABLE_ACTION", # PARSE ERRORS 200-299
+    201: "INVALID_ACTION",
+    202: "UNPARSABLE_FIELD",
+    203: "DUPLICATE_FIELD",
+    204: "MISSING_REQUIRED_FIELD",
     301: "USERNAME_TAKEN", # INVALID INPUT ERRORS 300-399
-    302: "MESSAGE_EMPTY"
+    302: "INVALID_TO_USER",
+    303: "INVALID_FROM_USER"
 }
 
 
-VALID_ARGS = {
-    
+VALID_FIELD_TYPE_MAP = {
+    "status": int,
+    "message": str,
 }
 
 class ChatAppRequest():
-    def __init__(self, body: str):
-        lines = body.split("\n")
+    def __init__(self):
+        self.type: str = None
+        self.to_user: str = None
+        self.from_user: str = None
+        self.fields: dict[str, ] = {}
 
-        self.__parse_action_line(lines)
+    def add_field(self):
+        pass # TODO
+
+    def from_body(self, body: str):
+        if len(body) == 0:
+            raise Exception # TODO Change this
+        
+        lines = body.split("\n")
+        self.__parse_action_line(lines[0])
+
+        if len(lines) > 1:
+            self.__parse_fields(lines[1:])
+
+        self.__validate_request()
 
     def __parse_action_line(self, line: str):
-        split = line.split("\t")
-        if len(split) > 2:
-            raise exceptions.UnparsableRequestException({"action_line": "Unexpected length of action line"})
+        """
+        Parses action line and sets instance variables action, from, and
+        to based on input. This function DOES NOT verify the validity of
+        passed values, but does verify that it is parsible.
 
-class ChatAppResponse():
-    def __init__(self, body):
-        self.status = 
+        Parameters
+        ----------
+        line : str
+            The action line to parse
+
+        Raises
+        ------
+        UnparsableRequestException
+            When action line is unparsible
+        """
+        split = line.split("\t")
+        if not len(split) == 2:
+            raise UnparsableRequestException(200, "Action line unreadable")
+        
+        type = split[0].upper()
+        path_str = split[1].split("->")
+
+        if not len(path_str) == 2:
+            raise UnparsableRequestException(200, "from->to relation invalid")
+        
+        self.type = type
+        self.from_user = path_str[0]
+        self.to_user = path_str[1]
+
+    def __validate_request(self, field: str, value):
+        """
+        Checks that request object meets valid request criteria.
+
+        Raises
+        ------
+        UnparsableRequestException
+            When an instance variable of the request object is invalid.
+        """
+        # Validate type is real
+        if not self.type in REQUEST_TYPE_REQUIRED_FIELD_MAPS:
+            raise UnparsableRequestException(201, f"Action type `{self.type}` unacceptable")
+
+        # Validate required fields are present
+        if not REQUEST_TYPE_REQUIRED_FIELD_MAPS[self.type].issubset(set([field for field in self.fields])):
+            raise UnparsableRequestException(204, f"Required field missing")
+
+
+    def __parse_fields(self, lines: list[str]):
+        """
+        Raises
+        ------
+        UnparsableRequestException
+            When field value line is unparsable.
+        """
+        pairs = {}
+
+        for field_line in lines:
+            split_line = field_line.split(":")
+
+            if not len(split_line) == 2:
+                raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
+
+            if split_line[0].lower() in self.fields:
+                raise UnparsableRequestException(203, f"duplicate field `{split_line[0].lower()}`")
+
+            pairs[split_line[0].lower()] = split_line[1].lstrip()
+
+        self.fields = pairs
+
+    def __str__(self):
+        """
+        Convert instance to string sent over socket. This function does check the validty
+        of passed fields, but does verify parsibility
+
+        Returns
+        -------
+        string
+            Request string
+        """
+        fieldlines = [f"{field}: {str(self.fields[field])}" for field in self.fields]
+        
+        return "\n".join([
+            f"{self.type}\t{self.from_user}->{self.to_user}",
+            *fieldlines
+        ])
+
+
+
+# class ChatAppResponse():
+#     def __init__(self, status: int):
+#         self.status = 
