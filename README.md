@@ -1,5 +1,22 @@
 # Chatting Application Protocol
 
+## Getting Stored:
+
+**Running tests:**
+```sh
+sh ./bin/test
+```
+
+**Start the server:**
+```sh
+sh ./bin/start server
+```
+
+**Start a client:**
+```sh
+sh ./bin/start client
+```
+
 ## Overview:
 
 The protocol has the following format:
@@ -36,24 +53,3 @@ Actions INTRODUCE and DISCONNECT have no required fields.
 ### MISC notes to find a home for:
 - Encoding is utf-8
 - server responds with username = server. Only the server can be named server.
-
-
-
-client connection:
-CONNECT
-USERNAME:<username>
-
-client disconnection:
-DISCONNECT
-USERNAME:<username>
-
-client sending message:
-POST
-TO:<username>
-MESSAGE:<message>
-
-server success:
-200
-
-server side error:
-400
