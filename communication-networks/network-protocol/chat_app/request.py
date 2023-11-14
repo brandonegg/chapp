@@ -1,10 +1,10 @@
 from exceptions import UnparsableRequestException
 
-REQUEST_TYPE_REQUIRED_FIELD_MAPS = {
-    "INTRODUCE": {},
+REQUEST_TYPE_REQUIRED_FIELD_MAPS: dict[str, set[str]] = {
+    "INTRODUCE": set(),
     "RESPONSE": {"status"},
     "POST": {"message"},
-    "GOODBYE": {}
+    "GOODBYE": set()
 }
 
 STATUS_CODE_MAP = {
@@ -20,24 +20,27 @@ STATUS_CODE_MAP = {
 }
 
 
-VALID_FIELD_TYPE_MAP = {
+FIELD_TYPE_MAP = {
     "status": int,
     "message": str,
 }
 
 class ChatAppRequest():
-    def __init__(self):
+    def __init__(self, body: str | None = None):
         self.type: str = None
         self.to_user: str = None
         self.from_user: str = None
         self.fields: dict[str, ] = {}
+
+        if not body is None:
+            self.from_body(body)
 
     def add_field(self):
         pass # TODO
 
     def from_body(self, body: str):
         if len(body) == 0:
-            raise Exception # TODO Change this
+            raise UnparsableRequestException(200, "Message body empty")
         
         lines = body.split("\n")
         self.__parse_action_line(lines[0])
@@ -77,7 +80,7 @@ class ChatAppRequest():
         self.from_user = path_str[0]
         self.to_user = path_str[1]
 
-    def __validate_request(self, field: str, value):
+    def __validate_request(self):
         """
         Checks that request object meets valid request criteria.
 
@@ -107,17 +110,26 @@ class ChatAppRequest():
         for field_line in lines:
             split_line = field_line.split(":")
 
-            if not len(split_line) == 2:
+            if len(split_line) < 2:
                 raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
 
-            if split_line[0].lower() in self.fields:
+            label = split_line[0].lower()
+            value = ":".join(split_line[1:]).lstrip()
+
+            if label in self.fields:
                 raise UnparsableRequestException(203, f"duplicate field `{split_line[0].lower()}`")
 
-            pairs[split_line[0].lower()] = split_line[1].lstrip()
+            if split_line[0] in FIELD_TYPE_MAP:
+                try:
+                    value = FIELD_TYPE_MAP[label](value)
+                except:
+                    raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
+
+            pairs[label] = value
 
         self.fields = pairs
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Convert instance to string sent over socket. This function does check the validty
         of passed fields, but does verify parsibility
