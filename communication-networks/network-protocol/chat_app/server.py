@@ -66,7 +66,7 @@ class ChatServer():
             response.to_user = request.from_user
             response.fields["status"] = 200
 
-        self.__send_response(response)
+        self.__send_response(response, socket)
         
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
         socket.send(str(response).encode())
