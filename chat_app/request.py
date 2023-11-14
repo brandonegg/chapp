@@ -27,8 +27,8 @@ FIELD_TYPE_MAP = {
 }
 
 class Message():
-    def __init__(self, time: time, message: str):
-        self.time = time
+    def __init__(self, timestamp, message: str):
+        self.timestamp = timestamp
         self.message = message
 
 class ChatAppRequest():
