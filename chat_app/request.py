@@ -1,4 +1,5 @@
 from exceptions import UnparsableRequestException
+import time
 
 REQUEST_TYPE_REQUIRED_FIELD_MAPS: dict[str, set[str]] = {
     "INTRODUCE": set(),
@@ -25,6 +26,11 @@ FIELD_TYPE_MAP = {
     "message": str,
 }
 
+class Message():
+    def __init__(self, time: time, message: str):
+        self.time = time
+        self.message = message
+
 class ChatAppRequest():
     def __init__(self, body: str | None = None):
         self.type: str = None
@@ -35,8 +41,8 @@ class ChatAppRequest():
         if not body is None:
             self.from_body(body)
 
-    def add_field(self):
-        pass # TODO
+    def add_field(self, key: str, value):
+        self.fields[key] = value
 
     def from_body(self, body: str):
         if len(body) == 0:

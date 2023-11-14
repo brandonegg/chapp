@@ -16,9 +16,22 @@ class ChatClient():
     request.from_user = username
     request.to_user = "server"
     request.type = "INTRODUCE"
+    
+    self.username = username
 
     self.__send_request(request)
     return self.__wait_response()
+  
+  def post(self, recipient: str, message: str) -> ChatAppRequest | None:
+    request = ChatAppRequest()
+    request.from_user = self.username
+    request.to_user = recipient
+    request.type = "POST"
+    request.add_field("message", message)
+
+    self.__send_request(request)
+    return self.__wait_response()
+
     
   def __clear_incomming(self):
     """
@@ -46,4 +59,7 @@ if __name__ == "__main__":
   chat_client = ChatClient()
   chat_client.connect_to("127.0.0.1", 6969)
   response = chat_client.introduce("Brandon")
+  print(response)
+
+  response = chat_client.post("Sam", "hi")
   print(response)

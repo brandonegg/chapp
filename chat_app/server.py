@@ -3,10 +3,12 @@ import threading
 import time
 from exceptions import UnparsableRequestException
 from request import ChatAppRequest
+from request import Message
 
 class ClientMap():
     def __init__(self):
         self.__username_socket_map = {}
+        self.__message_map: dict[str, dict[str, list[Message]]] = {}
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
@@ -40,7 +42,7 @@ class ChatServer():
                 self.__handle_introduce(request, client_socket)
                 return
             case "POST":
-                pass # TODO
+                self.__handle_post(request, client_socket)
             case "GOODBYE": # TODO
                 pass
             case "RESPONSE":
@@ -52,6 +54,9 @@ class ChatServer():
                 response.from_user = "server"
                 response.fields["status"] = 201
 
+
+    def __handle_post(post, request: ChatAppRequest, socket: socket.socket):
+        pass
 
     def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
         response = ChatAppRequest()
