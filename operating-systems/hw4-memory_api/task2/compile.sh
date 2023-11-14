@@ -1,1 +1,0 @@
-gcc -ggdb -O0 -o task2 task2.c
