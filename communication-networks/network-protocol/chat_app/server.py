@@ -20,24 +20,27 @@ class ChatServer():
         self.__bind_socket_in(port)
         self.__request_handler_loop()
 
-    def handle_request(self, client_socket: socket.socket, client_address: socket._RetAddress):
+    def handle_request(self, client_socket: socket.socket, client_address: str):
         try:
             request = ChatAppRequest(client_socket.recv(1024).decode())
         except UnparsableRequestException:
             pass # TODO: handle exception
 
     def __request_handler_loop(self):
+        print("Server now accepting connections")
         while True:
             client_socket, client_address = self.socket_in.accept()
             client_thread = threading.Thread(target=self.handle_request, args=(client_socket, client_address))
             client_thread.start() 
 
     def __bind_socket_in(self, port):
-        self.socket_in.bind(("0.0.0.0", port))
+        ip_temp = ''
+        self.socket_in.bind((ip_temp, port))
+        print(f"socket binded to `{ip_temp}:{port}`")
 
 if __name__ == "__main__":
     server = ChatServer()
-    server.listen_to(10000) # TODO: pass by CLI arg instead
+    server.listen_to(6969) # TODO: pass by CLI arg instead
 
 
 

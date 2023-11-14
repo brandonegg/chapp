@@ -3,7 +3,7 @@ start_client() {
 }
 
 start_server() {
-  echo "I'm server"
+  python3 -m chat_app.server
 }
 
 case $1 in
