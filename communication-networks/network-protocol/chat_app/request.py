@@ -145,9 +145,3 @@ class ChatAppRequest():
             f"{self.type}\t{self.from_user}->{self.to_user}",
             *fieldlines
         ])
-
-
-
-# class ChatAppResponse():
-#     def __init__(self, status: int):
-#         self.status = 
