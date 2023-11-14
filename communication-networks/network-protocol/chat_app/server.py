@@ -18,13 +18,20 @@ class ChatServer():
 
     def listen_to(self, port: int):
         self.__bind_socket_in(port)
+        self.socket_in.listen()
         self.__request_handler_loop()
 
     def handle_request(self, client_socket: socket.socket, client_address: str):
         try:
             request = ChatAppRequest(client_socket.recv(1024).decode())
-        except UnparsableRequestException:
-            pass # TODO: handle exception
+        except UnparsableRequestException as e:
+            response = ChatAppRequest()
+            response.type = "RESPONSE"
+            response.to_user = "unknown"
+            response.from_user = "server"
+            response.fields["status"] = e.status_code
+
+            print(response)
 
     def __request_handler_loop(self):
         print("Server now accepting connections")
