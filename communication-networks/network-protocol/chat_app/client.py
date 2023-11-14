@@ -39,7 +39,7 @@ class ChatClient():
     print(request)
     self.out_socket.send(str(request).encode())
 
-  def __wait_response(self, timeout:str) -> ChatAppRequest:
+  def __wait_response(self, timeout:str = TIMEOUT_SEC) -> ChatAppRequest:
     return ChatAppRequest(self.out_socket.recv(1024).decode())
 
 if __name__ == "__main__":
