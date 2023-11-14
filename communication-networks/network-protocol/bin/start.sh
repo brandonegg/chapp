@@ -1,5 +1,5 @@
 start_client() {
-  echo "I'm client"
+  python3 -m chat_app.client
 }
 
 start_server() {

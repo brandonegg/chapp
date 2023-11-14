@@ -32,16 +32,19 @@ class ChatServer():
             response.fields["status"] = e.status_code
 
             print(response)
+        print(request)
+
 
     def __request_handler_loop(self):
         print("Server now accepting connections")
         while True:
             client_socket, client_address = self.socket_in.accept()
+            print("new client!")
             client_thread = threading.Thread(target=self.handle_request, args=(client_socket, client_address))
             client_thread.start() 
 
     def __bind_socket_in(self, port):
-        ip_temp = ''
+        ip_temp = '127.0.0.1'
         self.socket_in.bind((ip_temp, port))
         print(f"socket binded to `{ip_temp}:{port}`")
 
