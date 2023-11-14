@@ -6,10 +6,13 @@ from request import ChatAppRequest
 
 class ClientMap():
     def __init__(self):
-        self.__address_socket_map = {}
+        self.__username_socket_map = {}
 
-    def add_client(self, socket, username):
-        pass # TODO: Throw error if username already taken
+    def set_socket_username(self, username, socket):
+        self.__username_socket_map[username] = socket
+
+    def username_taken(self, username):
+        return username in self.__username_socket_map
 
 class ChatServer():
     def __init__(self):
@@ -31,9 +34,42 @@ class ChatServer():
             response.from_user = "server"
             response.fields["status"] = e.status_code
 
-            print(response)
-        print(request)
+        
+        match request.type:
+            case "INTRODUCE":
+                self.__handle_introduce(request, client_socket)
+                return
+            case "POST":
+                pass # TODO
+            case "GOODBYE": # TODO
+                pass
+            case "RESPONSE":
+                pass # TODO
+            case _:
+                response = ChatAppRequest()
+                response.type = "RESPONSE"
+                response.to_user = "unknown"
+                response.from_user = "server"
+                response.fields["status"] = 201
 
+
+    def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
+        response = ChatAppRequest()
+        response.type = "RESPONSE"
+        response.from_user = "server"
+
+        if self.clients.username_taken(request.from_user):
+            response.to_user = "unknown"
+            response.fields["status"] = 301
+        else:
+            self.clients.set_socket_username(request.from_user, socket)
+            response.to_user = request.from_user
+            response.fields["status"] = 200
+
+        self.__send_response(response)
+        
+    def __send_response(self, response: ChatAppRequest, socket: socket.socket):
+        socket.send(str(response).encode())
 
     def __request_handler_loop(self):
         print("Server now accepting connections")
