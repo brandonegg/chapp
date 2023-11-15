@@ -27,9 +27,14 @@ FIELD_TYPE_MAP = {
 }
 
 class Message():
-    def __init__(self, timestamp, message: str):
+    def __init__(self, timestamp, message: str, from_user: str, to_user: str):
         self.timestamp = timestamp
         self.message = message
+        self.from_user = from_user
+        self.to_user = to_user
+
+    def __str__(self) -> str:
+        return f"message: {self.message}\ntimestamp: {self.timestamp}\nfrom_user: {self.from_user}\nto_user: {self.to_user}"
 
 class ChatAppRequest():
     def __init__(self, body: str | None = None):

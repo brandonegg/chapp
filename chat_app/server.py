@@ -5,17 +5,32 @@ from exceptions import UnparsableRequestException
 from request import ChatAppRequest
 from request import Message
 import logger
+import json
 
 class ClientMap():
     def __init__(self):
         self.__username_socket_map = {}
-        self.__message_map: dict[str, dict[str, list[Message]]] = {}
+        self.__messages: list[Message] = []
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
 
     def username_taken(self, username):
         return username in self.__username_socket_map
+    
+    def print_messages(self):
+        print(self.__messages)
+
+    def put_message(self, message: Message):
+        self.__messages.append(message)
+    
+    def dump_messages(self):
+        with open('chat_app/messages.json', 'w') as file:
+            json.dump(self.__messages, file, default=str, indent=4)
+
+    def find_messages(self, from_user: str, to_user: str) -> list[Message]:
+        pass
+        
 
 class ChatServer():
     def __init__(self):
@@ -43,7 +58,7 @@ class ChatServer():
                     response.from_user = "server"
                     response.fields["status"] = e.status_code
 
-            
+
                 match request.type:
                     case "INTRODUCE":
                         self.__handle_introduce(request, client_socket)
@@ -70,10 +85,15 @@ class ChatServer():
         response.to_user = request.from_user
         response.fields["status"] = 200
         
-        message = Message(time.localtime(), request.fields["message"])
-        self.clients.__message_map[request.from_user][request.to_user].append(message)
+        message = Message(time.strftime("[%Y-%m-%d %H:%M:%S]"), request.fields["message"], request.from_user, request.to_user)
+        self.clients.put_message(message)
 
         logger.log_request(request)
+        self.clients.dump_messages()
+
+        # TODO does not send the message to the to_user!!!!
+        # TODO does save the message!!!
+        # TODO server does not load messages from messages.json!!!
 
         self.__send_response(response, socket)
         
