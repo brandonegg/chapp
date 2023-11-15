@@ -23,9 +23,9 @@ The protocol has the following format:
 
 **Request:**
 ```
-<ACTION>\t<FROM>-><TO>
-status:<STATUS_CODE>
-message:<STRING>
+<ACTION>\t<FROM>-><TO>\\
+status:<STATUS_CODE>\\
+message:<STRING>\\
 ```
 
 The first line of the request is called the *Action Line*, it is intended to specify the entire purpose of the data being sent and where it should go.
