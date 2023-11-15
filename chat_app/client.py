@@ -26,6 +26,9 @@ class ChatClient():
     request.from_user = self.username
     request.to_user = "server"
     request.type = "GOODBYE"
+
+    self.__send_request(request)
+    return self.__wait_response()
   
   def post(self, recipient: str, message: str) -> ChatAppRequest | None:
     request = ChatAppRequest()
@@ -70,7 +73,6 @@ if __name__ == "__main__":
   response = chat_client.post("Sam", "hi")
   print(response)
 
-  print("sending goodbye")
   goodbye = chat_client.goodbye()
   print(goodbye)
 
