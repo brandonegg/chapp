@@ -21,6 +21,12 @@ class ChatClient():
     self.__send_request(request)
     return self.__wait_response()
   
+  def goodbye(self) -> ChatAppRequest | None:
+    request = ChatAppRequest()
+    request.from_user = self.username
+    request.to_user = "server"
+    request.type = "GOODBYE"
+  
   def post(self, recipient: str, message: str) -> ChatAppRequest | None:
     request = ChatAppRequest()
     request.from_user = self.username
@@ -57,8 +63,17 @@ class ChatClient():
 if __name__ == "__main__":
   chat_client = ChatClient("Brandon")
   chat_client.connect_to("127.0.0.1", 6969)
-  #response = chat_client.introduce()
-  #print(response)
 
+  response = chat_client.introduce()
+  print(response)
+
+  response = chat_client.post("Sam", "hi")
+  print(response)
+
+  print("sending goodbye")
+  goodbye = chat_client.goodbye()
+  print(goodbye)
+
+  # should fail
   response = chat_client.post("Sam", "hi")
   print(response)

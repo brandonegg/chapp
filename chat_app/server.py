@@ -15,9 +15,15 @@ class ClientMap():
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
+    
+    def remove_socket_username(self, username):
+        self.__username_socket_map[username] = None
 
     def username_taken(self, username):
         return username in self.__username_socket_map
+    
+    def username_not_taken(self, username):
+        return not self.username_taken(username)
     
     def print_messages(self):
         print(self.__messages)
@@ -44,7 +50,8 @@ class ChatServer():
         self.__request_handler_loop()
 
     def handle_request(self, client_socket: socket.socket, client_address: str):
-        while True:
+        listen = True
+        while listen:
             try:
                 data = client_socket.recv(1024).decode()
                 if not data:
@@ -58,7 +65,8 @@ class ChatServer():
                     response.to_user = "unknown"
                     response.from_user = "server"
                     response.fields["status"] = e.status_code
-
+                
+                print("type", request.type)
 
                 match request.type:
                     case "INTRODUCE":
@@ -66,6 +74,9 @@ class ChatServer():
                     case "POST":
                         self.__handle_post(request, client_socket)
                     case "GOODBYE": # TODO
+                        # if goodbye is successful, end the loop
+                        print("keep going", listen)
+                        listen = self.__handle_goodbye(request, client_socket)
                         pass
                     case "RESPONSE":
                         pass # TODO
@@ -115,7 +126,28 @@ class ChatServer():
         logger.log_request(request)
 
         self.__send_response(response, socket)
-        
+    
+    def __handle_goodbye(self, request: ChatAppRequest, socket: socket.socket) -> bool:
+        response = ChatAppRequest()
+        response.type = "GOODBYE"
+        response.from_user = "server"
+        dont_end_loop = True
+
+        if self.clients.username_not_taken(request.from_user):
+            response.to_user = "unknown"
+            response.fields["status"] = 301
+        else:
+            self.clients.remove_socket_username(request.from_user, socket)
+            response.to_user = request.from_user
+            response.fields["status"] = 200
+            dont_end_loop = False
+
+        logger.log_request(request)
+
+        self.__send_response(response, socket)
+        return dont_end_loop
+
+
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
         socket.send(str(response).encode())
 
