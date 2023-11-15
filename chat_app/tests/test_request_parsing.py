@@ -36,7 +36,7 @@ def test_invalid_type_of_field_value():
   Field value for status code has a string that isn't parsable as a number
   """
   with pytest.raises(UnparsableRequestException) as error:
-    result = ChatAppRequest("RESPONSE\tserver->brandon\nstatus: hello")
+    result = ChatAppRequest("RESPONSE\tserver->brandon\\\nstatus: hello")
   
   assert error.value.status_code == 202
 
@@ -56,10 +56,18 @@ def test_valid_response():
   """
   Valid response
   """
-  result = ChatAppRequest("RESPONSE\tserver->brandon\nstatus: 200")
+  result = ChatAppRequest("RESPONSE\tserver->brandon\\\nstatus: 200")
   
   assert result.type == "RESPONSE"
   assert result.from_user == "server"
   assert result.to_user == "brandon"
   assert "status" in result.fields
   assert result.fields["status"] == 200
+
+def test_valid_request_with_complex_characters():
+  """
+  Includes a \n and : in message, both parsing characters of fields that should be valid.
+  """
+  result = ChatAppRequest("POST\tbrandon->server\\\nmessage: hello\nBrandon:brandon")
+  
+  assert result.fields["message"] == "hello\nBrandon:brandon"

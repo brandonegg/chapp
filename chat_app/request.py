@@ -26,16 +26,6 @@ FIELD_TYPE_MAP = {
     "message": str,
 }
 
-class Message():
-    def __init__(self, timestamp, message: str, from_user: str, to_user: str):
-        self.timestamp = timestamp
-        self.message = message
-        self.from_user = from_user
-        self.to_user = to_user
-
-    def __str__(self) -> str:
-        return f"message: {self.message}\ntimestamp: {self.timestamp}\nfrom_user: {self.from_user}\nto_user: {self.to_user}"
-
 class ChatAppRequest():
     def __init__(self, body: str | None = None):
         self.type: str = None
@@ -53,7 +43,7 @@ class ChatAppRequest():
         if len(body) == 0:
             raise UnparsableRequestException(200, "Message body empty")
         
-        lines = body.split("\n")
+        lines = body.split("\\\n")
         self.__parse_action_line(lines[0])
 
         if len(lines) > 1:
@@ -152,7 +142,17 @@ class ChatAppRequest():
         """
         fieldlines = [f"{field}: {str(self.fields[field])}" for field in self.fields]
         
-        return "\n".join([
+        return "\\\n".join([
             f"{self.type}\t{self.from_user}->{self.to_user}",
             *fieldlines
         ])
+
+class Message(ChatAppRequest):
+    def __init__(self, timestamp, message: str, from_user: str, to_user: str):
+        super().__init__()
+
+        self.timestamp = timestamp
+        self.add_field("timestamp", timestamp)
+        self.add_field("message", message)
+        self.from_user = from_user
+        self.to_user = to_user
