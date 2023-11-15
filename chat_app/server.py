@@ -6,6 +6,7 @@ from request import ChatAppRequest
 from request import Message
 import logger
 import json
+import argparse
 
 class ClientMap():
     def __init__(self):
@@ -132,7 +133,14 @@ class ChatServer():
 
 if __name__ == "__main__":
     server = ChatServer()
-    server.listen_to(6969) # TODO: pass by CLI arg instead
+    # copilot: take in port as a cli argument
+    parser = argparse.ArgumentParser(description='Accept a port number')
+    parser.add_argument('-p', '--port', type=int, default=6969, help='Port number')
+    
+    args = parser.parse_args()
+    port_number = args.port
+
+    server.listen_to(port_number)
 
 
 
