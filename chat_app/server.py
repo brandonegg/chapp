@@ -71,7 +71,7 @@ class ChatServer():
                         self.__handle_introduce(request, client_socket)
                     case "POST":
                         self.__handle_post(request, client_socket)
-                    case "GOODBYE": # TODO
+                    case "GOODBYE":
                         # if goodbye is successful, end the loop
                         listen = self.__handle_goodbye(request, client_socket)
                         username = request.from_user
