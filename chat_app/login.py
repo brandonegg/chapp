@@ -7,7 +7,7 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Label, StringVar
 
 
 OUTPUT_PATH = Path(__file__).parent
@@ -93,13 +93,18 @@ def login_pressed():
 
     if response_success:
         print(response)
-        # Successful login, switch to gui2.py
-        window.destroy()  # Close current GUI window
-        import dms  # Import and run gui2.py
-        dms()
+        window.destroy()
+        import dms
+        dms.dms(chat_client)
     else:
         # Handle failed login (e.g., show an error message)
         print("Login failed")
+        # make a label that says username logged in already
+        window.after(100, show_error_message)  # Schedule error message after a delay
+
+def show_error_message():
+    error_label.place(x=615, y=250)  # Fixed position for error label
+    error_label.config(text="Login failed. Please try again.", fg="red", font=("Arial", 30))  # Update error label
 
 canvas = Canvas(
     window,
@@ -174,6 +179,7 @@ button_2.place(
     height=82.0
 )
 
+error_label = Label(window, text="", fg="red")  # Label to show error message
 # circle pfp background
 draw_circle_from_rectangle(canvas, 561.0, 380.0, 693.0, 512.0, "#D9D9D9")
 

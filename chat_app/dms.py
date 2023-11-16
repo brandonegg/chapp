@@ -8,218 +8,219 @@ from pathlib import Path
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+import client
+
+def dms(chat_client: client.ChatClient):
+    OUTPUT_PATH = Path(__file__).parent
+    ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
 
 
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
+    def relative_to_assets(path: str) -> Path:
+        return ASSETS_PATH / Path(path)
 
 
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
+    window = Tk()
+
+    window.geometry("1920x1080")
+    window.configure(bg = "#FFFFFF")
 
 
-window = Tk()
+    def draw_rounded_rectangle(canvas, x, y, width, height, radius, color):
+        canvas.create_rectangle(
+            x + radius,
+            y,
+            x + width - radius,
+            y + height,
+            fill=color,
+            outline=color
+        )
+        canvas.create_rectangle(
+            x,
+            y + radius,
+            x + width,
+            y + height - radius,
+            fill=color,
+            outline=color
+        )
+        canvas.create_oval(
+            x,
+            y,
+            x + 2 * radius,
+            y + 2 * radius,
+            fill=color,
+            outline=color
+        )
+        canvas.create_oval(
+            x + width - 2 * radius,
+            y,
+            x + width,
+            y + 2 * radius,
+            fill=color,
+            outline=color
+        )
+        canvas.create_oval(
+            x,
+            y + height - 2 * radius,
+            x + 2 * radius,
+            y + height,
+            fill=color,
+            outline=color
+        )
+        canvas.create_oval(
+            x + width - 2 * radius,
+            y + height - 2 * radius,
+            x + width,
+            y + height,
+            fill=color,
+            outline=color
+        )
 
-window.geometry("1920x1080")
-window.configure(bg = "#FFFFFF")
+    def draw_circle(canvas, x, y, diameter, color):
+        canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
 
+    canvas = Canvas(
+        window,
+        bg = "#FFFFFF",
+        height = 1080,
+        width = 1920,
+        bd = 0,
+        highlightthickness = 0,
+        relief = "ridge"
+    )
 
-def draw_rounded_rectangle(canvas, x, y, width, height, radius, color):
+    canvas.place(x = 0, y = 0)
+    # background rectangle
     canvas.create_rectangle(
-        x + radius,
-        y,
-        x + width - radius,
-        y + height,
-        fill=color,
-        outline=color
+        483.0,
+        129.0,
+        1437.0,
+        952.0,
+        fill="#332222",
+        outline="")
+
+    # DMs
+    draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
+    draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
+    draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
+
+    # canvas.create_rectangle(
+    #     557.0,
+    #     340.0,
+    #     689.0,
+    #     472.0,
+    #     fill="#D9D9D9",
+    #     outline="")
+    # whiteish circle
+    draw_circle(canvas, 557.0, 340.0, 689.0 - 557.0, "#D9D9D9")
+
+    #head
+    # canvas.create_rectangle(
+    #     600.0,
+    #     360.0,
+    #     646.0,
+    #     406.0,
+    #     fill="#999999",
+    #     outline="")
+    draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
+
+    #body
+    # canvas.create_rectangle(
+    #     589.0,
+    #     406.0,
+    #     658.0,
+    #     454.0,
+    #     fill="#999999",
+    #     outline="")
+    x1, y1 = 584.0, 406.0
+    x2, y2 = 663.0, 494.0
+
+    canvas.create_arc(
+        x1, y1, x2, y2,
+        start=357, extent=186,
+        fill="#999999", outline=""
     )
-    canvas.create_rectangle(
-        x,
-        y + radius,
-        x + width,
-        y + height - radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y,
-        x + 2 * radius,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y,
-        x + width,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y + height - 2 * radius,
-        x + 2 * radius,
-        y + height,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y + height - 2 * radius,
-        x + width,
-        y + height,
-        fill=color,
-        outline=color
+
+    # circle pfp background
+    draw_circle(canvas, 557.0, 519.0, 689.0 - 557.0, "#D9D9D9")
+
+    # head
+    # canvas.create_rectangle(
+    #     600.0,
+    #     539.0,
+    #     646.0,
+    #     585.0,
+    #     fill="#999999",
+    #     outline="")
+    draw_circle(canvas, 600.0, 539.0, 646.0 - 600.0, "#999999")
+
+    # body
+    # canvas.create_rectangle(
+    #     589.0,
+    #     585.0,
+    #     658.0,
+    #     633.0,
+    #     fill="#999999",
+    #     outline="")
+    x1, y1 = 584.0, 585.0
+    x2, y2 = 663.0, 673.0
+
+    canvas.create_arc(
+        x1, y1, x2, y2,
+        start=357, extent=186,
+        fill="#999999", outline=""
     )
 
-def draw_circle(canvas, x, y, diameter, color):
-    canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    # canvas.create_rectangle(
+    #     623.0,
+    #     732.0,
+    #     1298.0,
+    #     821.0,
+    #     fill="#800909",
+    #     outline="")
 
-canvas = Canvas(
-    window,
-    bg = "#FFFFFF",
-    height = 1080,
-    width = 1920,
-    bd = 0,
-    highlightthickness = 0,
-    relief = "ridge"
-)
+    # canvas.create_rectangle(
+    #     557.0,
+    #     711.0,
+    #     689.0,
+    #     843.0,
+    #     fill="#D9D9D9",
+    #     outline="")
+    draw_circle(canvas, 557.0, 711.0, 689.0 - 557.0, "#D9D9D9")
 
-canvas.place(x = 0, y = 0)
-# background rectangle
-canvas.create_rectangle(
-    483.0,
-    129.0,
-    1437.0,
-    952.0,
-    fill="#332222",
-    outline="")
+    # head
+    # canvas.create_rectangle(
+    #     600.0,
+    #     731.0,
+    #     646.0,
+    #     777.0,
+    #     fill="#999999",
+    #     outline="")
+    draw_circle(canvas, 600.0, 731.0, 646.0 - 600.0, "#999999")
 
-# DMs
-draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
-draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
-draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
+    # body
+    # canvas.create_rectangle(
+    #     589.0,
+    #     777.0,
+    #     658.0,
+    #     825.0,
+    #     fill="#999999",
+    #     outline="")
+    x1, y1 = 584.0, 777.0
+    x2, y2 = 663.0, 865.0
 
-# canvas.create_rectangle(
-#     557.0,
-#     340.0,
-#     689.0,
-#     472.0,
-#     fill="#D9D9D9",
-#     outline="")
-# whiteish circle
-draw_circle(canvas, 557.0, 340.0, 689.0 - 557.0, "#D9D9D9")
+    canvas.create_arc(
+        x1, y1, x2, y2,
+        start=357, extent=186,
+        fill="#999999", outline=""
+    )
 
-#head
-# canvas.create_rectangle(
-#     600.0,
-#     360.0,
-#     646.0,
-#     406.0,
-#     fill="#999999",
-#     outline="")
-draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
-
-#body
-# canvas.create_rectangle(
-#     589.0,
-#     406.0,
-#     658.0,
-#     454.0,
-#     fill="#999999",
-#     outline="")
-x1, y1 = 584.0, 406.0
-x2, y2 = 663.0, 494.0
-
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-# circle pfp background
-draw_circle(canvas, 557.0, 519.0, 689.0 - 557.0, "#D9D9D9")
-
-# head
-# canvas.create_rectangle(
-#     600.0,
-#     539.0,
-#     646.0,
-#     585.0,
-#     fill="#999999",
-#     outline="")
-draw_circle(canvas, 600.0, 539.0, 646.0 - 600.0, "#999999")
-
-# body
-# canvas.create_rectangle(
-#     589.0,
-#     585.0,
-#     658.0,
-#     633.0,
-#     fill="#999999",
-#     outline="")
-x1, y1 = 584.0, 585.0
-x2, y2 = 663.0, 673.0
-
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-# canvas.create_rectangle(
-#     623.0,
-#     732.0,
-#     1298.0,
-#     821.0,
-#     fill="#800909",
-#     outline="")
-
-# canvas.create_rectangle(
-#     557.0,
-#     711.0,
-#     689.0,
-#     843.0,
-#     fill="#D9D9D9",
-#     outline="")
-draw_circle(canvas, 557.0, 711.0, 689.0 - 557.0, "#D9D9D9")
-
-# head
-# canvas.create_rectangle(
-#     600.0,
-#     731.0,
-#     646.0,
-#     777.0,
-#     fill="#999999",
-#     outline="")
-draw_circle(canvas, 600.0, 731.0, 646.0 - 600.0, "#999999")
-
-# body
-# canvas.create_rectangle(
-#     589.0,
-#     777.0,
-#     658.0,
-#     825.0,
-#     fill="#999999",
-#     outline="")
-x1, y1 = 584.0, 777.0
-x2, y2 = 663.0, 865.0
-
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-canvas.create_text(
-    881.0,
-    181.0,
-    anchor="nw",
-    text="DMs",
-    fill="#FFFFFF",
-    font=("Inter", 60 * -1)
-)
-window.resizable(False, False)
-window.mainloop()
+    canvas.create_text(
+        881.0,
+        181.0,
+        anchor="nw",
+        text="DMs",
+        fill="#FFFFFF",
+        font=("Inter", 60 * -1)
+    )
+    window.resizable(False, False)
+    window.mainloop()
