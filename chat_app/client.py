@@ -1,5 +1,6 @@
 import socket
 from request import ChatAppRequest
+import argparse
 
 TIMEOUT_SEC = 10
 
@@ -69,8 +70,17 @@ class ChatClient():
       print("Connection closed by the server.")
 
 if __name__ == "__main__":
-  chat_client = ChatClient("Brandon")
-  chat_client.connect_to("127.0.0.1", 6969)
+  parser = argparse.ArgumentParser(description='Accept a port number')
+  parser.add_argument('-u', '--username', type=str, default="Brandon", help='Username to use for the chat client')
+  parser.add_argument('-p', '--port', type=int, default=6969, help='Port number')
+    
+  args = parser.parse_args()
+  username = args.username
+  port_number = args.port
+
+
+  chat_client = ChatClient(username)
+  chat_client.connect_to("127.0.0.1", port_number)
 
   response = chat_client.introduce()
   print(response)
