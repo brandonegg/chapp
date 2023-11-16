@@ -3,7 +3,7 @@ import threading
 import time
 from exceptions import UnparsableRequestException
 from request import ChatAppRequest
-from request import Message
+#from request import Message
 import logger
 import json
 import argparse
@@ -11,10 +11,13 @@ import argparse
 class ClientMap():
     def __init__(self):
         self.__username_socket_map = {}
-        self.__messages: list[Message] = []
+        self.__messages: list[dict[str, str]] = []
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
+
+    def get_socket_by_username(self, username: str) -> socket.socket:
+        return self.__username_socket_map[username]
     
     def remove_socket_username(self, username):
         self.__username_socket_map[username] = None
@@ -28,15 +31,18 @@ class ClientMap():
     def print_messages(self):
         print(self.__messages)
 
-    def put_message(self, message: Message):
+    def put_message(self, message: dict[str, ]):
         self.__messages.append(message)
     
     def dump_messages(self):
         with open('chat_app/messages.json', 'w') as file:
-            json.dump(self.__messages, file, default=str, indent=4)
+            json.dump(self.__messages, file, indent=4)
 
-    def find_messages(self, from_user: str, to_user: str) -> list[Message]:
-        pass
+    def find_messages(self, from_user: str, to_user: str) -> list[dict[str, str]]:
+        return [
+            msg for msg in self.__messages
+            if msg["from_user"] == from_user and msg["to_user"] == to_user
+        ]
         
 
 class ChatServer():
@@ -93,18 +99,30 @@ class ChatServer():
         response = ChatAppRequest()
         response.type = "RESPONSE"
         response.from_user = "server"
-        response.to_user = request.from_user
-        response.fields["status"] = 200
         
-        message = Message(time.strftime("[%Y-%m-%d %H:%M:%S]"), request.fields["message"], request.from_user, request.to_user)
-        self.clients.put_message(message)
+
+        if self.clients.username_taken(request.from_user):
+            response.to_user = request.from_user
+            response.fields["status"] = 200
+
+            message = {
+                "timetsamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+                "message": request.fields["message"],
+                "from_user": request.from_user,
+                "to_user": request.to_user
+            }
+            
+            self.clients.put_message(message)
+            self.clients.dump_messages()
+
+            if(self.clients.username_taken(request.to_user)):
+                self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
+
+        else:
+            response.to_user = "unknown"
+            response.fields["status"] = 301
 
         logger.log_request(request)
-        self.clients.dump_messages()
-
-        # TODO does not send the message to the to_user!!!!
-        # TODO does save the message!!!
-        # TODO server does not load messages from messages.json!!!
 
         self.__send_response(response, socket)
         
@@ -117,6 +135,9 @@ class ChatServer():
         if self.clients.username_taken(request.from_user):
             response.to_user = "unknown"
             response.fields["status"] = 301
+
+        # todo should send client updated messages
+
         else:
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user

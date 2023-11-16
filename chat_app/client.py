@@ -9,6 +9,9 @@ class ChatClient():
     self.out_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.username = username
 
+    #recipient => list of messages between user and recipient
+    self.messages: dict[str, list[dict[str, str]]] = {}
+
   def connect_to(self, ip: str, port: int):
     print(f"connecting to {ip}:{port}")
     self.out_socket.connect((ip, port))
@@ -31,10 +34,10 @@ class ChatClient():
     self.__send_request(request)
     return self.__wait_response()
   
-  def post(self, recipient: str, message: str) -> ChatAppRequest | None:
+  def post(self, to_user: str, message: str) -> ChatAppRequest | None:
     request = ChatAppRequest()
     request.from_user = self.username
-    request.to_user = recipient
+    request.to_user = to_user
     request.type = "POST"
     request.fields["message"] = message
 
@@ -85,7 +88,7 @@ if __name__ == "__main__":
   response = chat_client.introduce()
   print(response)
 
-  response = chat_client.post("Sam", "hi")
+  response = chat_client.post("Sam", "whatup")
   print(response)
 
   goodbye = chat_client.goodbye()

@@ -147,12 +147,12 @@ class ChatAppRequest():
             *fieldlines
         ])
 
-class Message(ChatAppRequest):
-    def __init__(self, timestamp, message: str, from_user: str, to_user: str):
-        super().__init__()
+# class Message(ChatAppRequest):
+#     def __init__(self, timestamp, message: str, from_user: str, to_user: str):
+#         super().__init__()
 
-        self.timestamp = timestamp
-        self.add_field("timestamp", timestamp)
-        self.add_field("message", message)
-        self.from_user = from_user
-        self.to_user = to_user
+#         self.timestamp = timestamp
+#         self.add_field("timestamp", timestamp)
+#         self.add_field("message", message)
+#         self.from_user = from_user
+#         self.to_user = to_user
