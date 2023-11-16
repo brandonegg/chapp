@@ -61,7 +61,12 @@ class ChatClient():
     self.out_socket.send(str(request).encode())
 
   def __wait_response(self, timeout:str = TIMEOUT_SEC) -> ChatAppRequest:
-    return ChatAppRequest(self.out_socket.recv(1024).decode())
+    try :
+      return ChatAppRequest(self.out_socket.recv(1024).decode())
+    except ConnectionAbortedError as e:
+      # Handle the case when the connection is closed by the server
+      # For instance, stop trying to send/receive data through this socket
+      print("Connection closed by the server.")
 
 if __name__ == "__main__":
   chat_client = ChatClient("Brandon")

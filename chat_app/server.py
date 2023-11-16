@@ -74,7 +74,7 @@ class ChatServer():
                     case "GOODBYE": # TODO
                         # if goodbye is successful, end the loop
                         listen = self.__handle_goodbye(request, client_socket)
-                        print("keep going", listen)
+                        username = request.from_user
                         pass
                     case "RESPONSE":
                         pass # TODO
@@ -86,8 +86,8 @@ class ChatServer():
                         response.fields["status"] = 201
             except:
                 continue
-        print('closing socket')
         client_socket.close()
+        self.clients.remove_socket_username(username)
 
     def __handle_post(self, request: ChatAppRequest, socket: socket.socket):
         response = ChatAppRequest()
@@ -132,14 +132,9 @@ class ChatServer():
         response.from_user = "server"
         dont_end_loop = True
 
-        if self.clients.username_not_taken(request.from_user):
-            response.to_user = "unknown"
-            response.fields["status"] = 301
-        else:
-            self.clients.remove_socket_username(request.from_user, socket)
-            response.to_user = request.from_user
-            response.fields["status"] = 200
-            dont_end_loop = False
+        response.to_user = request.from_user
+        response.fields["status"] = 200
+        dont_end_loop = False
 
         logger.log_request(request)
 
@@ -156,8 +151,6 @@ class ChatServer():
             client_socket, client_address = self.socket_in.accept()
             client_thread = threading.Thread(target=self.handle_request, args=(client_socket, client_address))
             client_thread.start() 
-            client_thread.join()
-            print("thread joined")
 
     def __bind_socket_in(self, port):
         ip_temp = '127.0.0.1'
