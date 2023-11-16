@@ -89,8 +89,9 @@ def login_pressed():
     chat_client = client.ChatClient(username)
     chat_client.connect_to("127.0.0.1", 6969)
     response = chat_client.introduce()
+    response_success = response.fields["status"] != 301 
 
-    if response:
+    if response_success:
         print(response)
         # Successful login, switch to gui2.py
         window.destroy()  # Close current GUI window
