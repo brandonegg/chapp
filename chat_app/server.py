@@ -35,7 +35,7 @@ class ClientMap():
         self.__messages.append(message)
     
     def dump_messages(self):
-        with open('chat_app/messages.json', 'w') as file:
+        with open("chat_app/messages.json", 'w') as file:
             json.dump(self.__messages, file, indent=4)
 
     def find_messages(self, from_user: str, to_user: str) -> list[dict[str, str]]:
@@ -43,6 +43,10 @@ class ClientMap():
             msg for msg in self.__messages
             if msg["from_user"] == from_user and msg["to_user"] == to_user
         ]
+    
+    def load_messages(self):
+        with open("chat_app/messages.json", 'r') as file:
+            self.__messages = json.load(file)
         
 
 class ChatServer():
@@ -53,6 +57,7 @@ class ChatServer():
     def listen_to(self, port: int):
         self.__bind_socket_in(port)
         self.socket_in.listen()
+        #self.clients.load_messages()
         self.__request_handler_loop()
 
     def handle_request(self, client_socket: socket.socket, client_address: str):
@@ -71,6 +76,8 @@ class ChatServer():
                     response.to_user = "unknown"
                     response.from_user = "server"
                     response.fields["status"] = e.status_code
+
+                    logger.log_request(response)
                 
                 match request.type:
                     case "INTRODUCE":
@@ -90,7 +97,11 @@ class ChatServer():
                         response.to_user = "unknown"
                         response.from_user = "server"
                         response.fields["status"] = 201
+
+                        logger.log_request(response)
             except:
+                #todo this needs to be fixed it would catch all exceptions and do nothing about them lol
+
                 continue
         client_socket.close()
         self.clients.remove_socket_username(username)
