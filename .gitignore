@@ -1,4 +1,4 @@
 **/.vscode
 **/.env
 **/__pycache__
-chat_app/messages.json
+**/messages.json
