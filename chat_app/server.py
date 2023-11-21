@@ -138,7 +138,7 @@ class ChatServer():
             response.fields["messages"] = self.clients.find_messages(request.from_user)
             if(self.clients.username_taken(request.to_user)):
                 #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
-                response.fields["status"] = 200
+                response.fields["status"] = 100
             else:
                 response.fields["status"] = 401
 
@@ -164,7 +164,7 @@ class ChatServer():
         else:
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user
-            response.fields["status"] = 200
+            response.fields["status"] = 100
 
             response.fields["messages"] = self.clients.find_messages(request.from_user)
 
