@@ -113,7 +113,7 @@ class ChatServer():
         if self.clients.username_taken(request.from_user):
 
             message = {
-                "timetsamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+                "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
                 "message": request.fields["message"],
                 "from_user": request.from_user,
                 "to_user": request.to_user
