@@ -135,7 +135,7 @@ class ChatServer():
             self.clients.dump_messages()
 
 
-            response.fields["messages"] = self.clients.find_messages(request.from_user)
+            response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
             if(self.clients.username_taken(request.to_user)):
                 #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
                 response.fields["status"] = 100
@@ -166,7 +166,9 @@ class ChatServer():
             response.to_user = request.from_user
             response.fields["status"] = 100
 
-            response.fields["messages"] = self.clients.find_messages(request.from_user)
+            messages = self.clients.find_messages(request.from_user)
+            print(messages)
+            response.fields["messages"] = str(messages) + "\\\n"
 
         logger.log_request(request)
 

@@ -66,7 +66,20 @@ class ChatClient():
 
   def __wait_response(self, timeout:str = TIMEOUT_SEC) -> ChatAppRequest:
     try :
-      return ChatAppRequest(self.out_socket.recv(1024).decode())
+      # this is necessary because sometimes when the server sends all the messages
+      # it is longer than 1024 bytes and otherwise the client will not receive all of it
+      received_data = b''
+      while True:
+        chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
+        received_data += chunk  # Append the received chunk to the existing data
+        print(received_data)
+        
+        if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
+            break  # Break the loop if the data ends with a newline character
+
+      decoded_data = received_data.decode()
+      return ChatAppRequest(decoded_data)
+
     except ConnectionAbortedError as e:
       # Handle the case when the connection is closed by the server
       # For instance, stop trying to send/receive data through this socket
@@ -88,6 +101,6 @@ if __name__ == "__main__":
   response = chat_client.introduce()
   print(response)
 
-  response = chat_client.post("Sam", "yo")
-  print(response)
+  #response = chat_client.post("Sam", "yo")
+  #print(response)
 
