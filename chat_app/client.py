@@ -88,12 +88,6 @@ if __name__ == "__main__":
   response = chat_client.introduce()
   print(response)
 
-  response = chat_client.post("Sam", "whatup")
+  response = chat_client.post("Sam", "yo")
   print(response)
 
-  goodbye = chat_client.goodbye()
-  print(goodbye)
-
-  # should fail
-  response = chat_client.post("Sam", "hi")
-  print(response)

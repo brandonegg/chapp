@@ -41,8 +41,12 @@ class ClientMap():
     def find_messages(self, from_user: str, to_user: str) -> list[dict[str, str]]:
         return [
             msg for msg in self.__messages
-            if msg["from_user"] == from_user and msg["to_user"] == to_user
+            if (msg["from_user"] == from_user or msg["from_user"] == to_user) and 
+               (msg["to_user"] == to_user or msg["to_user"] == from_user)
         ]
+    
+    def find_messages(self, user: str) -> list[dict[str, str]]:
+        return [msg for msg in self.__messages if msg["from_user"] == user or msg["to_user"] == user]
     
     def load_messages(self):
         with open("chat_app/messages.json", 'r') as file:
@@ -57,7 +61,7 @@ class ChatServer():
     def listen_to(self, port: int):
         self.__bind_socket_in(port)
         self.socket_in.listen()
-        #self.clients.load_messages()
+        self.clients.load_messages()
         self.__request_handler_loop()
 
     def handle_request(self, client_socket: socket.socket, client_address: str):
@@ -99,9 +103,9 @@ class ChatServer():
                         response.fields["status"] = 201
 
                         logger.log_request(response)
-            except:
+            except Exception as e:
+                print(e)
                 #todo this needs to be fixed it would catch all exceptions and do nothing about them lol
-
                 continue
         client_socket.close()
         self.clients.remove_socket_username(username)
@@ -110,11 +114,10 @@ class ChatServer():
         response = ChatAppRequest()
         response.type = "RESPONSE"
         response.from_user = "server"
+        response.to_user = request.from_user
         
 
         if self.clients.username_taken(request.from_user):
-            response.to_user = request.from_user
-            response.fields["status"] = 200
 
             message = {
                 "timetsamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
@@ -127,7 +130,12 @@ class ChatServer():
             self.clients.dump_messages()
 
             if(self.clients.username_taken(request.to_user)):
-                self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
+                #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
+                response.fields["status"] = 200
+            else:
+                response.fields["status"] = 401
+                response.fields["messages"] = self.clients.find_messages(request.from_user)
+
 
         else:
             response.to_user = "unknown"
@@ -147,12 +155,12 @@ class ChatServer():
             response.to_user = "unknown"
             response.fields["status"] = 301
 
-        # todo should send client updated messages
-
         else:
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user
             response.fields["status"] = 200
+
+            response.fields["messages"] = self.clients.find_messages(request.from_user)
 
         logger.log_request(request)
 
