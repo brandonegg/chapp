@@ -1,6 +1,6 @@
 import socket
 import select
-from time import sleep
+import json
 from request import ChatAppRequest
 import argparse
 from exceptions import UnparsableRequestException
@@ -159,6 +159,17 @@ if __name__ == "__main__":
 
   response = chat_client.introduce()
   print(response)
+  #use this for populating gui with messages
+  data_string = response.fields["messages"]
+  start_index = data_string.find("[")
+  end_index = data_string.rfind("]") + 1
+  messages_str = data_string[start_index:end_index]
+  messages_str = messages_str.replace("'", '"')
+  messages = json.loads(messages_str)
+  # for example, if you wanted to print the third message
+  #print(messages[2])
+
+  
   # add this so if you run client with sam as username first you can test if it receives the post message from brandon
   while(username == "Sam"):
     chat_client.out_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
