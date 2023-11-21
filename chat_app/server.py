@@ -184,10 +184,6 @@ class ChatServer():
 
         self.__send_response(response, socket)
 
-
-
-        
-
     def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
         response = ChatAppRequest()
         response.type = "RESPONSE"
@@ -204,7 +200,7 @@ class ChatServer():
             response.fields["status"] = 100
 
             messages = self.clients.find_messages(request.from_user)
-            response.fields["messages"] = str(messages) + "\\\n"
+            response.fields["messages"] = str(messages)
 
         logger.log_request(request)
 
@@ -228,7 +224,7 @@ class ChatServer():
 
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
         logger.log_response(response)
-        socket.send(str(response).encode())
+        socket.send((str(response) + "\\\n").encode())
     
     def __forward_request(self, request: ChatAppRequest, socket: socket.socket):
         logger.log_request(request)
