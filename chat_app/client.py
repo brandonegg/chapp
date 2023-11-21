@@ -1,7 +1,9 @@
 import socket
 import select
+from time import sleep
 from request import ChatAppRequest
 import argparse
+from exceptions import UnparsableRequestException
 
 TIMEOUT_SEC = 10
 
@@ -45,7 +47,50 @@ class ChatClient():
 
     self.__send_request(request)
     return self.__wait_response()
+  
+  # todo: make this better, just made this wrapper for testing
+  def handle_request(self):
+    data = self.out_socket.recv(1024).decode()
+    try:
+      request = ChatAppRequest(data)
+    except UnparsableRequestException as e:
+      response = ChatAppRequest()
+      response.type = "RESPONSE"
+      response.to_user = "unknown"
+      response.from_user = "server"
+      response.fields["status"] = e.status_code
 
+    match request.type:
+      case "POST":
+        print("Received post:")
+        print(request)
+        if request.to_user in self.messages:
+          self.messages[request.to_user].append({"from": request.from_user, "message": request.fields["message"]})
+        else:
+          self.messages[request.to_user] = [{"from": request.from_user, "message": request.fields["message"]}]
+        #tell server it went right
+        response = ChatAppRequest()
+        response.type = "RESPONSE"
+        response.to_user = "server"
+        response.from_user = self.username
+        response.fields["status"] = 100
+        self.__send_response(response)
+      case "RESPONSE":
+        print("received response")
+        print(request)
+        return request
+      case "GOODBYE":
+        print("received goodbye")
+        print(request)
+        return request
+      case "INTRODUCE":
+        print("received introduce")
+        print(request)
+        return request
+      case _:
+        print("received unknown request")
+        print(request)
+        return request
     
   def __clear_incomming(self):
     """
@@ -65,6 +110,19 @@ class ChatClient():
     print("Sending:")
     print(request)
     self.out_socket.send(str(request).encode())
+
+  def __send_response(self, response: ChatAppRequest):
+    """
+    Sends the request object over the socket
+
+    Parameters
+    ----------
+    request : ChatAppRequest
+      Request object to send
+    """
+    print("Sending:")
+    print(response)
+    self.out_socket.send(str(response).encode())
 
   def __wait_response(self, timeout:str = TIMEOUT_SEC) -> ChatAppRequest:
     try :
@@ -109,8 +167,7 @@ if __name__ == "__main__":
     ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)  # Check if the socket is ready to read
     if ready_to_read:
       chat_client.out_socket.setblocking(True)  # we want it to block now that we know there is data
-      response = chat_client.__wait_response()
-      print(response)
+      chat_client.handle_request()
 
     # you could put code right under here that has it do a request, so for example we could have a gui event listener here that
     # sends a post when the user hits enter on sending a message, even though it still is listening for messages

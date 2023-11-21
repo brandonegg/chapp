@@ -72,6 +72,13 @@ class ChatServer():
         self.clients.load_messages()
         self.__request_handler_loop()
 
+    def wait_for_response(self, socket: socket.socket):
+        print("in wait for response")
+        time.sleep(2)
+        received_data = socket.recv(1024).decode()
+        return ChatAppRequest(received_data)
+
+
     def handle_request(self, client_socket: socket.socket, client_address: str):
         listen = True
         while listen:
@@ -129,6 +136,8 @@ class ChatServer():
         self.clients.remove_socket_username(username)
 
     def __handle_post(self, request: ChatAppRequest, socket: socket.socket):
+        logger.log_request(request)
+
         response = ChatAppRequest()
         response.type = "RESPONSE"
         response.from_user = "server"
@@ -143,27 +152,33 @@ class ChatServer():
                 "from_user": request.from_user,
                 "to_user": request.to_user
             }
-            
-            self.clients.put_message(message)
-            self.clients.dump_messages()
 
+            #forward the request to the to_user
+            if (self.clients.username_taken(request.to_user)):
+                logger.log_send_request(request)
+                self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
+                to_user_response = self.wait_for_response(socket)
+                logger.log_receive_response(to_user_response)
+                response.fields["status"] = to_user_response.fields["status"]
+                if response.fields["status"] == 100:       
+                    # client says it was a success so add the message to the list of messages     
+                    self.clients.put_message(message)
+                    self.clients.dump_messages()
 
-            response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
-            if(self.clients.username_taken(request.to_user)):
-                #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
-                response.fields["status"] = 100
-                response.fields["status"] = 100
-            else:
+                    #was needed before this was added, if it gets stuck this may be the problem
+                    #response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
+            else: # to_user not online
                 response.fields["status"] = 401
-
-
         else:
             response.to_user = "unknown"
             response.fields["status"] = 301
 
-        logger.log_request(request)
+        logger.log_response(response)
 
         self.__send_response(response, socket)
+
+
+
         
 
     def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
@@ -207,6 +222,11 @@ class ChatServer():
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
         logger.log_response(response)
         socket.send(str(response).encode())
+    
+    def __forward_request(self, request: ChatAppRequest, socket: socket.socket):
+        logger.log_request(request)
+        socket.send(str(request).encode())
+
 
 
     def __request_handler_loop(self):
