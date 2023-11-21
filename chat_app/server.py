@@ -37,13 +37,6 @@ class ClientMap():
     def dump_messages(self):
         with open("chat_app/messages.json", 'w') as file:
             json.dump(self.__messages, file, indent=4)
-
-    def find_messages(self, from_user: str, to_user: str) -> list[dict[str, str]]:
-        return [
-            msg for msg in self.__messages
-            if (msg["from_user"] == from_user or msg["from_user"] == to_user) and 
-               (msg["to_user"] == to_user or msg["to_user"] == from_user)
-        ]
     
     def find_messages(self, user: str) -> list[dict[str, str]]:
         return [msg for msg in self.__messages if msg["from_user"] == user or msg["to_user"] == user]
@@ -129,12 +122,13 @@ class ChatServer():
             self.clients.put_message(message)
             self.clients.dump_messages()
 
+
+            response.fields["messages"] = self.clients.find_messages(request.from_user)
             if(self.clients.username_taken(request.to_user)):
                 #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
                 response.fields["status"] = 200
             else:
                 response.fields["status"] = 401
-                response.fields["messages"] = self.clients.find_messages(request.from_user)
 
 
         else:
