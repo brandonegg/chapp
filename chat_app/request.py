@@ -43,8 +43,8 @@ class ChatAppRequest():
     def from_body(self, body: str):
         if len(body) == 0:
             raise UnparsableRequestException(200, "Message body empty")
-        print(body)
         lines = body.split("\\\n")
+
         self.__parse_action_line(lines[0])
 
         if len(lines) > 1:
@@ -114,7 +114,6 @@ class ChatAppRequest():
             # for the client to receive all the data
             if field_line != '':
                 split_line = field_line.split(":")
-                print(split_line)
 
                 if len(split_line) < 2:
                     raise UnparsableRequestException(202, f"Unreadable field-value pair passed")

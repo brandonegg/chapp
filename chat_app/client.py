@@ -1,4 +1,5 @@
 import socket
+import select
 from request import ChatAppRequest
 import argparse
 
@@ -40,6 +41,7 @@ class ChatClient():
     request.to_user = to_user
     request.type = "POST"
     request.fields["message"] = message
+    print("request", request)
 
     self.__send_request(request)
     return self.__wait_response()
@@ -72,8 +74,7 @@ class ChatClient():
       while True:
         chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
         received_data += chunk  # Append the received chunk to the existing data
-        print(received_data)
-        
+                
         if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
             break  # Break the loop if the data ends with a newline character
 
@@ -100,7 +101,20 @@ if __name__ == "__main__":
 
   response = chat_client.introduce()
   print(response)
+  # add this so if you run client with sam as username first you can test if it receives the post message from brandon
+  while(username == "Sam"):
+    chat_client.out_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
 
-  #response = chat_client.post("Sam", "yo")
-  #print(response)
+    #this is an example of how all client threads can be listening for messages, while still being able to give a request if wanted
+    ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)  # Check if the socket is ready to read
+    if ready_to_read:
+      chat_client.out_socket.setblocking(True)  # we want it to block now that we know there is data
+      response = chat_client.__wait_response()
+      print(response)
+
+    # you could put code right under here that has it do a request, so for example we could have a gui event listener here that
+    # sends a post when the user hits enter on sending a message, even though it still is listening for messages
+
+  response = chat_client.post("Sam", "yo")
+  print(response)
 

@@ -10,8 +10,11 @@ import argparse
 
 class ClientMap():
     def __init__(self):
-        self.__username_socket_map = {}
+        self.__username_socket_map:dict = {}
         self.__messages: list[dict[str, str]] = []
+
+    def get_iterable_username_socket_map(self):
+        return self.__username_socket_map.items()
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
@@ -75,7 +78,16 @@ class ChatServer():
             try:
                 data = client_socket.recv(1024).decode()
                 if not data:
-                    
+                    #todo make this remove the user that has this socket from the map
+                    #only get here if an empty string is sent which happens when the client
+                    #disconnects without a goodbye
+                    #go through self.__username_socket_map and remove the socket that is equal to client_socket
+                    # for key, value in self.clients.get_iterable_username_socket_map():
+                    #     print(key, value)
+                    #     print(client_socket)
+                    #     if value == client_socket:
+                    #         #self.clients.__username_socket_map[key] = None
+                    #         print("found it", key, value)
                     continue
 
                 try:
@@ -140,6 +152,7 @@ class ChatServer():
             if(self.clients.username_taken(request.to_user)):
                 #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
                 response.fields["status"] = 100
+                response.fields["status"] = 100
             else:
                 response.fields["status"] = 401
 
@@ -166,9 +179,9 @@ class ChatServer():
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user
             response.fields["status"] = 100
+            response.fields["status"] = 100
 
             messages = self.clients.find_messages(request.from_user)
-            print(messages)
             response.fields["messages"] = str(messages) + "\\\n"
 
         logger.log_request(request)
@@ -192,7 +205,9 @@ class ChatServer():
 
 
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
+        logger.log_response(response)
         socket.send(str(response).encode())
+
 
     def __request_handler_loop(self):
         print("Server now accepting connections")
