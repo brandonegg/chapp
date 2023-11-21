@@ -1,6 +1,7 @@
 import socket
 import select
 import json
+from time import sleep
 from request import ChatAppRequest
 import argparse
 from exceptions import UnparsableRequestException
@@ -43,7 +44,6 @@ class ChatClient():
     request.to_user = to_user
     request.type = "POST"
     request.fields["message"] = message
-    print("request", request)
 
     self.__send_request(request)
     return self.__wait_response()
@@ -185,4 +185,12 @@ if __name__ == "__main__":
 
   response = chat_client.post("Sam", "yo")
   print(response)
+  while(True):
+    chat_client.out_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+
+    #this is an example of how all client threads can be listening for messages, while still being able to give a request if wanted
+    ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)  # Check if the socket is ready to read
+    if ready_to_read:
+      chat_client.out_socket.setblocking(True)  # we want it to block now that we know there is data
+      chat_client.handle_request()
 

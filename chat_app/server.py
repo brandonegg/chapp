@@ -7,6 +7,7 @@ from request import ChatAppRequest
 import logger
 import json
 import argparse
+import select
 
 class ClientMap():
     def __init__(self):
@@ -72,19 +73,21 @@ class ChatServer():
         self.clients.load_messages()
         self.__request_handler_loop()
 
-    def wait_for_response(self, socket: socket.socket):
-        print("in wait for response")
-        print(socket)
-        socket.settimeout(5)  # Set a 5-second timeout for socket operations
-        received_data = socket.recv(1024).decode()
-        return ChatAppRequest(received_data)
-
-
     def handle_request(self, client_socket: socket.socket, client_address: str):
         listen = True
         while listen:
             try:
-                data = client_socket.recv(1024).decode()
+                data = ""
+                client_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+
+                #this is an example of how all client threads can be listening for messages, while still being able to give a request if wanted
+                ready_to_read = False
+                while not ready_to_read:
+                    ready_to_read, _, _ = select.select([client_socket], [], [], 0.1)  # Check if the socket is ready to read
+
+                    if ready_to_read:
+                        data = client_socket.recv(1024).decode()
+
                 if not data:
                     #todo make this remove the user that has this socket from the map
                     #only get here if an empty string is sent which happens when the client
@@ -158,7 +161,12 @@ class ChatServer():
             if (self.clients.username_taken(request.to_user)):
                 logger.log_send_request(request)
                 self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
-                to_user_response = self.wait_for_response(self.clients.get_socket_by_username(request.to_user))
+                to_user_socket = self.clients.get_socket_by_username(request.to_user)
+                to_user_socket.setblocking(True)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+                received_data = to_user_socket.recv(1024).decode()
+                to_user_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+
+                to_user_response = ChatAppRequest(received_data)
                 logger.log_receive_response(to_user_response)
                 response.fields["status"] = to_user_response.fields["status"]
                 if response.fields["status"] == 100:       
@@ -173,8 +181,6 @@ class ChatServer():
         else:
             response.to_user = "unknown"
             response.fields["status"] = 301
-
-        logger.log_response(response)
 
         self.__send_response(response, socket)
 
@@ -244,7 +250,6 @@ class ChatServer():
 
 if __name__ == "__main__":
     server = ChatServer()
-    # copilot: take in port as a cli argument
     parser = argparse.ArgumentParser(description='Accept a port number')
     parser.add_argument('-p', '--port', type=int, default=6969, help='Port number')
     
