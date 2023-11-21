@@ -74,7 +74,8 @@ class ChatServer():
 
     def wait_for_response(self, socket: socket.socket):
         print("in wait for response")
-        time.sleep(2)
+        print(socket)
+        socket.settimeout(5)  # Set a 5-second timeout for socket operations
         received_data = socket.recv(1024).decode()
         return ChatAppRequest(received_data)
 
@@ -157,7 +158,7 @@ class ChatServer():
             if (self.clients.username_taken(request.to_user)):
                 logger.log_send_request(request)
                 self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
-                to_user_response = self.wait_for_response(socket)
+                to_user_response = self.wait_for_response(self.clients.get_socket_by_username(request.to_user))
                 logger.log_receive_response(to_user_response)
                 response.fields["status"] = to_user_response.fields["status"]
                 if response.fields["status"] == 100:       
