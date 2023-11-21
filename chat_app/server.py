@@ -42,8 +42,20 @@ class ClientMap():
         return [msg for msg in self.__messages if msg["from_user"] == user or msg["to_user"] == user]
     
     def load_messages(self):
-        with open("chat_app/messages.json", 'r') as file:
-            self.__messages = json.load(file)
+        try:
+            with open("chat_app/messages.json", 'r') as file:
+                self.__messages = json.load(file)
+        except FileNotFoundError:
+            print("File not found. Creating a new file.")
+            with open("chat_app/messages.json", 'w') as file:
+                file.write('[]')
+                self.__messages = []
+        except json.JSONDecodeError:
+            print("Invalid JSON format in the file. Wiping the file.")
+            with open("chat_app/messages.json", 'w') as file:
+                file.write('[]')
+                self.__messages = []
+
         
 
 class ChatServer():
