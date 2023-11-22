@@ -81,6 +81,16 @@ def dms(chat_client: client.ChatClient, messages: list[dict], username: str):
 
     def draw_circle(canvas, x, y, diameter, color):
         canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    
+    def circle_click(username):
+        print(f"{username} clicked")
+
+    def dm_button(canvas, x, y, diameter, color, username):
+        def on_click():
+            circle_click(username)
+        
+        button = Button(canvas, command=on_click, bg=color, bd=0, activebackground=color)
+        button.place(x=x, y=y, width=diameter, height=diameter)
 
     canvas = Canvas(
         window,
@@ -116,6 +126,9 @@ def dms(chat_client: client.ChatClient, messages: list[dict], username: str):
 
         # DM rectangles
         draw_rounded_rectangle(canvas, 623.0, 362.0 + i * 180.0, 675.0, 89.0, 35.0, "#800909")
+
+        # button
+        dm_button(canvas, 1300.0, 340.0 + i * 179.0, 132.0, "#FFFFFF", user)
 
         # circle pfp backgrounds
         draw_circle(canvas, 557.0, 340.0 + i * 179.0, 132.0, "#D9D9D9")
