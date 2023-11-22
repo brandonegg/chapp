@@ -20,11 +20,13 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
 
     def handle_incoming():
         while True:
-            chat_client.out_socket.setblocking(False)
+            pause_event.wait()  # Wait if the pause event is set
             ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
             if ready_to_read:
                 chat_client.out_socket.setblocking(True)
                 chat_client.handle_request()
+                chat_client.out_socket.setblocking(False)
+
 
 
     OUTPUT_PATH = Path(__file__).parent
@@ -141,9 +143,11 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
             "to_user": username
         }
         chat_client.messages.append(message)
+        pause_event.set()
         chat_client.out_socket.setblocking(True)
         response = chat_client.post(username, message_text)
         chat_client.out_socket.setblocking(False)
+        pause_event.clear()
         print(response)
 
         refresh_display()
@@ -155,6 +159,8 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     # Create a Button to send the message
     send_button = Button(window, text="Send", command=send_message)
     send_button.place(x=900, y=900)
+
+    pause_event = threading.Event()
 
     # it was too tough doing blocking and non blocking so i gave in an did a 2nd thread... 
     incoming_thread = threading.Thread(target=handle_incoming)

@@ -72,7 +72,6 @@ class ChatClient():
           "to_user": request.to_user
         }        
         self.messages.append(message)
-        print(self.messages)
 
         #tell server it went right
         response = ChatAppRequest()
