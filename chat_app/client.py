@@ -132,7 +132,6 @@ class ChatClient():
       while True:
         chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
         received_data += chunk  # Append the received chunk to the existing data
-        #print("rece::::::::", received_data)
                 
         if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
             break  # Break the loop if the data ends with a newline character

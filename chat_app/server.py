@@ -80,7 +80,7 @@ class ChatServer():
                 data = ""
                 client_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
 
-                #this is an example of how all client threads can be listening for messages, while still being able to give a request if wanted
+                #this lets the server look for messages without compeletely blocking this socket for other server threads
                 ready_to_read = False
                 while not ready_to_read:
                     ready_to_read, _, _ = select.select([client_socket], [], [], 0.1)  # Check if the socket is ready to read
@@ -157,14 +157,14 @@ class ChatServer():
                 "to_user": request.to_user
             }
 
-            #forward the request to the to_user
+            #forward the request to the to_user and see if it worked
             if (self.clients.username_taken(request.to_user)):
                 logger.log_send_request(request)
                 self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
                 to_user_socket = self.clients.get_socket_by_username(request.to_user)
-                to_user_socket.setblocking(True)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+                to_user_socket.setblocking(True)  # we want this to wait here until the client responds, so set it to blocking mode
                 received_data = to_user_socket.recv(1024).decode()
-                to_user_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+                to_user_socket.setblocking(False)  # blocking operation is done, free this socket for other server threads
 
                 to_user_response = ChatAppRequest(received_data)
                 logger.log_receive_response(to_user_response)
