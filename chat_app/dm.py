@@ -167,5 +167,26 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
     incoming_thread.start()
 
+    def check_messages():
+        last_displayed_message = message
+
+        while True:
+            time.sleep(1)  # Check every second
+            chat_client.messages.sort(key=lambda x: x['timestamp'])  # Sort the messages
+
+            # Get the last message after sorting
+            last_message = chat_client.messages[-1]['message'] if chat_client.messages else ""
+
+            # Check if the last message is different from the last displayed message
+            if last_message != last_displayed_message:
+                last_displayed_message = last_message
+                refresh_display()  # Call the function to refresh the GUI
+
+
+    # Start the thread to periodically check for new messages, without this, it only updates on sending a message
+    check_messages_thread = threading.Thread(target=check_messages)
+    check_messages_thread.daemon = True
+    check_messages_thread.start()
+
     window.resizable(False, False)
     window.mainloop()
