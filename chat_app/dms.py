@@ -9,9 +9,20 @@ from pathlib import Path
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 import client
+import dm
+import threading
+import select
 
-def dms(chat_client: client.ChatClient, messages: list[dict], username: str):
-    users = set(message['from_user'] for message in messages) | set(message['to_user'] for message in messages)
+def dms(chat_client: client.ChatClient, username: str):
+    def handle_incoming():
+        chat_client.out_socket.setblocking(False)
+        while True:
+            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
+            if ready_to_read:
+                chat_client.out_socket.setblocking(True)
+                chat_client.handle_request()
+
+    users = set(message['from_user'] for message in chat_client.messages) | set(message['to_user'] for message in chat_client.messages)
     set.remove(users, username)
     print(users)
 
@@ -82,12 +93,13 @@ def dms(chat_client: client.ChatClient, messages: list[dict], username: str):
     def draw_circle(canvas, x, y, diameter, color):
         canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
     
-    def circle_click(username):
-        print(f"{username} clicked")
+    def circle_click(button_username):
+        window.destroy()
+        dm.dm(chat_client, button_username, username)
 
-    def dm_button(canvas, x, y, diameter, color, username):
+    def dm_button(canvas, x, y, diameter, color, button_username):
         def on_click():
-            circle_click(username)
+            circle_click(button_username)
         
         button = Button(canvas, command=on_click, bg=color, bd=0, activebackground=color)
         button.place(x=x, y=y, width=diameter, height=diameter)
@@ -156,5 +168,10 @@ def dms(chat_client: client.ChatClient, messages: list[dict], username: str):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
+    incoming_thread = threading.Thread(target=handle_incoming)
+    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
+    incoming_thread.start()
+
     window.resizable(False, False)
     window.mainloop()

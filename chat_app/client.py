@@ -2,6 +2,7 @@ import socket
 import select
 import json
 from time import sleep
+import time
 from request import ChatAppRequest
 import argparse
 from exceptions import UnparsableRequestException
@@ -13,8 +14,8 @@ class ChatClient():
     self.out_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.username = username
 
-    #recipient => list of messages between user and recipient
-    self.messages: dict[str, list[dict[str, str]]] = {}
+    #recipient => list of all messages from server
+    self.messages: list[dict] = []
 
   def connect_to(self, ip: str, port: int):
     print(f"connecting to {ip}:{port}")
@@ -64,10 +65,15 @@ class ChatClient():
       case "POST":
         print("Received post:")
         print(request)
-        if request.to_user in self.messages:
-          self.messages[request.to_user].append({"from": request.from_user, "message": request.fields["message"]})
-        else:
-          self.messages[request.to_user] = [{"from": request.from_user, "message": request.fields["message"]}]
+        message = {
+          "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+          "message": request.fields["message"],
+          "from_user": request.from_user,
+          "to_user": request.to_user
+        }        
+        self.messages.append(message)
+        print(self.messages)
+
         #tell server it went right
         response = ChatAppRequest()
         response.type = "RESPONSE"
@@ -143,6 +149,10 @@ class ChatClient():
       # Handle the case when the connection is closed by the server
       # For instance, stop trying to send/receive data through this socket
       print("Connection closed by the server.")
+    except BlockingIOError:
+      # Handle the case when the socket is not ready to receive data yet
+      # For instance, wait until the socket is ready to receive data
+      print("Socket not ready to receive data yet.")
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Accept a port number')

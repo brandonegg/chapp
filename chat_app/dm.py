@@ -8,155 +8,157 @@ from pathlib import Path
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+import client
+import select
+import threading
+import time
+import json
 
 
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
+
+def dm(chat_client: client.ChatClient, username: str, owner_username: str):
+    def handle_incoming():
+        chat_client.out_socket.setblocking(False)
+        while True:
+            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
+            if ready_to_read:
+                chat_client.out_socket.setblocking(True)
+                chat_client.handle_request()
+                chat_client.out_socket.setblocking(False)
 
 
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
+    OUTPUT_PATH = Path(__file__).parent
+    ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
+
+    # Filter messages involving the specified username
+    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
+    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
 
 
-window = Tk()
+    def relative_to_assets(path: str) -> Path:
+        return ASSETS_PATH / Path(path)
 
-window.geometry("1920x1080")
-window.configure(bg = "#FFFFFF")
 
-def draw_rounded_rectangle(canvas, x, y, width, height, radius, color):
+    window = Tk()
+
+    window.geometry("1920x1080")
+    window.configure(bg = "#FFFFFF")
+
+    canvas = Canvas(
+        window,
+        bg = "#FFFFFF",
+        height = 1080,
+        width = 1920,
+        bd = 0,
+        highlightthickness = 0,
+        relief = "ridge"
+    )
+
+    canvas.place(x = 0, y = 0)
+    # bg rectangle
     canvas.create_rectangle(
-        x + radius,
-        y,
-        x + width - radius,
-        y + height,
-        fill=color,
-        outline=color
-    )
-    canvas.create_rectangle(
-        x,
-        y + radius,
-        x + width,
-        y + height - radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y,
-        x + 2 * radius,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y,
-        x + width,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y + height - 2 * radius,
-        x + 2 * radius,
-        y + height,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y + height - 2 * radius,
-        x + width,
-        y + height,
-        fill=color,
-        outline=color
+        483.0,
+        129.0,
+        1437.0,
+        952.0,
+        fill="#332222",
+        outline="")
+
+    canvas.create_text(
+        909.0,
+        179.0,
+        anchor="nw",
+        text="DM\n",
+        fill="#FFFFFF",
+        font=("Inter", 60 * -1)
     )
 
-def draw_circle(canvas, x, y, diameter, color):
-    canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    y_offset = 300  # Initial Y offset for displaying messages
+    # Iterate over the last 20 messages (or less if there are fewer than 20 messages)
+    # until i get pages working, or never teehee
+    for message in sorted_messages[-20:]:
+        text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
+        print(text)
+        canvas.create_text(
+            600,
+            y_offset,
+            anchor="nw",
+            text=text,
+            fill="#FFFFFF",
+            font=("Inter", 14)
+        )
+        y_offset += 30  # Increment Y offset to display next message
 
+    # Function to refresh the display with updated messages
+    def refresh_display():
+        canvas.delete("all")  # Clear the canvas
 
-canvas = Canvas(
-    window,
-    bg = "#FFFFFF",
-    height = 1080,
-    width = 1920,
-    bd = 0,
-    highlightthickness = 0,
-    relief = "ridge"
-)
+        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
+        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
+        canvas.place(x = 0, y = 0)
+        # bg rectangle
+        canvas.create_rectangle(
+            483.0,
+            129.0,
+            1437.0,
+            952.0,
+            fill="#332222",
+            outline="")
 
-canvas.place(x = 0, y = 0)
-# bg rectangle
-canvas.create_rectangle(
-    483.0,
-    129.0,
-    1437.0,
-    952.0,
-    fill="#332222",
-    outline="")
+        canvas.create_text(
+            909.0,
+            179.0,
+            anchor="nw",
+            text="DM\n",
+            fill="#FFFFFF",
+            font=("Inter", 60 * -1)
+        )
 
-draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
+        y_offset = 300  # Initial Y offset for displaying messages
+        for message in sorted_messages[-20:]:
+            text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
+            canvas.create_text(
+                600,
+                y_offset,
+                anchor="nw",
+                text=text,
+                fill="#FFFFFF",
+                font=("Inter", 14)
+            )
+            y_offset += 30  # Increment Y offset for the next message
 
-draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
+    # Function to send the message when the button is clicked
+    def send_message():
+        message_text = message_entry.get()  # Get the text from the Entry widget
+        if message_text == "":
+            return
+        # Clear the Entry widget after sending the message
+        message_entry.delete(0, 'end')
+        # Code to send the message using chat_client
+        chat_client.out_socket.setblocking(True)
+        message = {
+            "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+            "message": message_text,
+            "from_user": owner_username,
+            "to_user": username
+        }
+        chat_client.messages.append(message)
+        response = chat_client.post(username, message_text)
+        print(response)
+        refresh_display()
 
-#circle bg
-draw_circle(canvas, 557, 340.0, 689.0 - 557.0, "#D9D9D9")
+    # Create an Entry widget for typing the message
+    message_entry = Entry(window, font=("Inter", 12))
+    message_entry.place(x=600, y=900)
 
-#head
-draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
+    # Create a Button to send the message
+    send_button = Button(window, text="Send", command=send_message)
+    send_button.place(x=900, y=900)
 
-#body
-x1, y1 = 584.0, 406.0
-x2, y2 = 663.0, 494.0
+    # it was too tough doing blocking and non blocking so i gave in an did a 2nd thread... 
+    incoming_thread = threading.Thread(target=handle_incoming)
+    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
+    incoming_thread.start()
 
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-#circle bg
-draw_circle(canvas, 1232.0, 519.0, 1364.0 - 1232.0, "#D9D9D9")
-
-#head
-draw_circle(canvas, 1275.0, 539.0, 1321.0 - 1275.0, "#999999")
-
-#body
-x1, y1 = 1259.0, 585.0
-x2, y2 = 1338.0, 673.0
-
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
-
-draw_circle(canvas, 557, 711.0, 689.0 - 557.0, "#D9D9D9")
-
-#head
-draw_circle(canvas, 600, 731.0, 646.0 - 600.0, "#999999")
-
-#body
-x1, y1 = 584.0, 777.0
-x2, y2 = 663.0, 865.0
-
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
-
-canvas.create_text(
-    909.0,
-    179.0,
-    anchor="nw",
-    text="DM\n",
-    fill="#FFFFFF",
-    font=("Inter", 60 * -1)
-)
-window.resizable(False, False)
-window.mainloop()
+    window.resizable(False, False)
+    window.mainloop()

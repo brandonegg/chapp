@@ -102,7 +102,8 @@ def login_pressed():
         messages = json.loads(messages_str)
         window.destroy()
         import dms
-        dms.dms(chat_client, messages, username)
+        chat_client.messages = messages
+        dms.dms(chat_client, username)
     else:
         # Handle failed login (e.g., show an error message)
         print("Login failed, status code:", response.fields["status"])
