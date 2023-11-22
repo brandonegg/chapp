@@ -17,14 +17,14 @@ import json
 
 
 def dm(chat_client: client.ChatClient, username: str, owner_username: str):
+
     def handle_incoming():
-        chat_client.out_socket.setblocking(False)
         while True:
+            chat_client.out_socket.setblocking(False)
             ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
             if ready_to_read:
                 chat_client.out_socket.setblocking(True)
                 chat_client.handle_request()
-                chat_client.out_socket.setblocking(False)
 
 
     OUTPUT_PATH = Path(__file__).parent
@@ -78,7 +78,6 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     # until i get pages working, or never teehee
     for message in sorted_messages[-20:]:
         text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
-        print(text)
         canvas.create_text(
             600,
             y_offset,
@@ -135,7 +134,6 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
         # Clear the Entry widget after sending the message
         message_entry.delete(0, 'end')
         # Code to send the message using chat_client
-        chat_client.out_socket.setblocking(True)
         message = {
             "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
             "message": message_text,
@@ -143,8 +141,11 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
             "to_user": username
         }
         chat_client.messages.append(message)
+        chat_client.out_socket.setblocking(True)
         response = chat_client.post(username, message_text)
+        chat_client.out_socket.setblocking(False)
         print(response)
+
         refresh_display()
 
     # Create an Entry widget for typing the message
