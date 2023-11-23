@@ -43,8 +43,8 @@ class ChatAppRequest():
     def from_body(self, body: str):
         if len(body) == 0:
             raise UnparsableRequestException(200, "Message body empty")
-        
         lines = body.split("\\\n")
+
         self.__parse_action_line(lines[0])
 
         if len(lines) > 1:
@@ -110,24 +110,27 @@ class ChatAppRequest():
         pairs = {}
 
         for field_line in lines:
-            split_line = field_line.split(":")
+            # need this check, I had to add a newline to the end of the string
+            # for the client to receive all the data
+            if field_line != '':
+                split_line = field_line.split(":")
 
-            if len(split_line) < 2:
-                raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
-
-            label = split_line[0].lower()
-            value = ":".join(split_line[1:]).lstrip()
-
-            if label in self.fields:
-                raise UnparsableRequestException(203, f"duplicate field `{split_line[0].lower()}`")
-
-            if split_line[0] in FIELD_TYPE_MAP:
-                try:
-                    value = FIELD_TYPE_MAP[label](value)
-                except:
+                if len(split_line) < 2:
                     raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
 
-            pairs[label] = value
+                label = split_line[0].lower()
+                value = ":".join(split_line[1:]).lstrip()
+
+                if label in self.fields:
+                    raise UnparsableRequestException(203, f"duplicate field `{split_line[0].lower()}`")
+
+                if split_line[0] in FIELD_TYPE_MAP:
+                    try:
+                        value = FIELD_TYPE_MAP[label](value)
+                    except:
+                        raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
+
+                pairs[label] = value
 
         self.fields = pairs
 

@@ -7,11 +7,15 @@ from request import ChatAppRequest
 import logger
 import json
 import argparse
+import select
 
 class ClientMap():
     def __init__(self):
-        self.__username_socket_map = {}
+        self.__username_socket_map:dict = {}
         self.__messages: list[dict[str, str]] = []
+
+    def get_iterable_username_socket_map(self):
+        return self.__username_socket_map.items()
 
     def set_socket_username(self, username, socket):
         self.__username_socket_map[username] = socket
@@ -73,8 +77,28 @@ class ChatServer():
         listen = True
         while listen:
             try:
-                data = client_socket.recv(1024).decode()
+                data = ""
+                client_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
+
+                #this lets the server look for messages without compeletely blocking this socket for other server threads
+                ready_to_read = False
+                while not ready_to_read:
+                    ready_to_read, _, _ = select.select([client_socket], [], [], 0.1)  # Check if the socket is ready to read
+
+                    if ready_to_read:
+                        data = client_socket.recv(1024).decode()
+
                 if not data:
+                    #todo make this remove the user that has this socket from the map
+                    #only get here if an empty string is sent which happens when the client
+                    #disconnects without a goodbye
+                    #go through self.__username_socket_map and remove the socket that is equal to client_socket
+                    # for key, value in self.clients.get_iterable_username_socket_map():
+                    #     print(key, value)
+                    #     print(client_socket)
+                    #     if value == client_socket:
+                    #         #self.clients.__username_socket_map[key] = None
+                    #         print("found it", key, value)
                     continue
 
                 try:
@@ -116,6 +140,8 @@ class ChatServer():
         self.clients.remove_socket_username(username)
 
     def __handle_post(self, request: ChatAppRequest, socket: socket.socket):
+        logger.log_request(request)
+
         response = ChatAppRequest()
         response.type = "RESPONSE"
         response.from_user = "server"
@@ -130,27 +156,33 @@ class ChatServer():
                 "from_user": request.from_user,
                 "to_user": request.to_user
             }
-            
-            self.clients.put_message(message)
-            self.clients.dump_messages()
 
+            #forward the request to the to_user and see if it worked
+            if (self.clients.username_taken(request.to_user)):
+                logger.log_send_request(request)
+                self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
+                to_user_socket = self.clients.get_socket_by_username(request.to_user)
+                to_user_socket.setblocking(True)  # we want this to wait here until the client responds, so set it to blocking mode
+                received_data = to_user_socket.recv(1024).decode()
+                to_user_socket.setblocking(False)  # blocking operation is done, free this socket for other server threads
 
-            response.fields["messages"] = self.clients.find_messages(request.from_user)
-            if(self.clients.username_taken(request.to_user)):
-                #self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
-                response.fields["status"] = 100
-            else:
+                to_user_response = ChatAppRequest(received_data)
+                logger.log_receive_response(to_user_response)
+                response.fields["status"] = to_user_response.fields["status"]
+                if response.fields["status"] == 100:       
+                    # client says it was a success so add the message to the list of messages     
+                    self.clients.put_message(message)
+                    self.clients.dump_messages()
+
+                    #was needed before this was added, if it gets stuck this may be the problem
+                    #response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
+            else: # to_user not online
                 response.fields["status"] = 401
-
-
         else:
             response.to_user = "unknown"
             response.fields["status"] = 301
 
-        logger.log_request(request)
-
         self.__send_response(response, socket)
-        
 
     def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
         response = ChatAppRequest()
@@ -165,8 +197,10 @@ class ChatServer():
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user
             response.fields["status"] = 100
+            response.fields["status"] = 100
 
-            response.fields["messages"] = self.clients.find_messages(request.from_user)
+            messages = self.clients.find_messages(request.from_user)
+            response.fields["messages"] = str(messages)
 
         logger.log_request(request)
 
@@ -189,7 +223,14 @@ class ChatServer():
 
 
     def __send_response(self, response: ChatAppRequest, socket: socket.socket):
-        socket.send(str(response).encode())
+        logger.log_response(response)
+        socket.send((str(response) + "\\\n").encode())
+    
+    def __forward_request(self, request: ChatAppRequest, socket: socket.socket):
+        logger.log_request(request)
+        socket.send(str(request).encode())
+
+
 
     def __request_handler_loop(self):
         print("Server now accepting connections")
@@ -205,7 +246,6 @@ class ChatServer():
 
 if __name__ == "__main__":
     server = ChatServer()
-    # copilot: take in port as a cli argument
     parser = argparse.ArgumentParser(description='Accept a port number')
     parser.add_argument('-p', '--port', type=int, default=6969, help='Port number')
     

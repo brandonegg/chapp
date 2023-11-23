@@ -9,8 +9,23 @@ from pathlib import Path
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 import client
+import dm
+import threading
+import select
 
-def dms(chat_client: client.ChatClient):
+def dms(chat_client: client.ChatClient, username: str):
+    def handle_incoming():
+        chat_client.out_socket.setblocking(False)
+        while True:
+            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
+            if ready_to_read:
+                chat_client.out_socket.setblocking(True)
+                chat_client.handle_request()
+
+    users = set(message['from_user'] for message in chat_client.messages) | set(message['to_user'] for message in chat_client.messages)
+    set.remove(users, username)
+    print(users)
+
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
 
@@ -77,6 +92,17 @@ def dms(chat_client: client.ChatClient):
 
     def draw_circle(canvas, x, y, diameter, color):
         canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    
+    def circle_click(button_username):
+        window.destroy()
+        dm.dm(chat_client, button_username, username)
+
+    def dm_button(canvas, x, y, diameter, color, button_username):
+        def on_click():
+            circle_click(button_username)
+        
+        button = Button(canvas, command=on_click, bg=color, bd=0, activebackground=color)
+        button.place(x=x, y=y, width=diameter, height=diameter)
 
     canvas = Canvas(
         window,
@@ -98,121 +124,41 @@ def dms(chat_client: client.ChatClient):
         fill="#332222",
         outline="")
 
-    # DMs
-    draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
-    draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
-    draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
+    #for each user do a rectangle whiteish circle, head, and body
+    for i, user in enumerate(users):
+        # user label
+        canvas.create_text(
+            680.0,
+            330.0 + i * 180.0,
+            anchor="nw",
+            text= user,
+            fill="#FFFFFF",
+            font=("Inter", 30 * -1)
+        )
 
-    # canvas.create_rectangle(
-    #     557.0,
-    #     340.0,
-    #     689.0,
-    #     472.0,
-    #     fill="#D9D9D9",
-    #     outline="")
-    # whiteish circle
-    draw_circle(canvas, 557.0, 340.0, 689.0 - 557.0, "#D9D9D9")
+        # DM rectangles
+        draw_rounded_rectangle(canvas, 623.0, 362.0 + i * 180.0, 675.0, 89.0, 35.0, "#800909")
 
-    #head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     360.0,
-    #     646.0,
-    #     406.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
+        # button
+        dm_button(canvas, 1300.0, 340.0 + i * 179.0, 132.0, "#FFFFFF", user)
 
-    #body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     406.0,
-    #     658.0,
-    #     454.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 406.0
-    x2, y2 = 663.0, 494.0
+        # circle pfp backgrounds
+        draw_circle(canvas, 557.0, 340.0 + i * 179.0, 132.0, "#D9D9D9")
 
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
+        # heads
+        draw_circle(canvas, 600.0, 360.0 + i * 179.0, 646.0 - 600.0, "#999999")
 
-    # circle pfp background
-    draw_circle(canvas, 557.0, 519.0, 689.0 - 557.0, "#D9D9D9")
+        # bodies
+        x1, y1 = 584.0, 404.0 + i * 179.0
+        x2, y2 = 663.0, 492.0 + i * 179.0
 
-    # head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     539.0,
-    #     646.0,
-    #     585.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600.0, 539.0, 646.0 - 600.0, "#999999")
-
-    # body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     585.0,
-    #     658.0,
-    #     633.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 585.0
-    x2, y2 = 663.0, 673.0
-
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
-
-    # canvas.create_rectangle(
-    #     623.0,
-    #     732.0,
-    #     1298.0,
-    #     821.0,
-    #     fill="#800909",
-    #     outline="")
-
-    # canvas.create_rectangle(
-    #     557.0,
-    #     711.0,
-    #     689.0,
-    #     843.0,
-    #     fill="#D9D9D9",
-    #     outline="")
-    draw_circle(canvas, 557.0, 711.0, 689.0 - 557.0, "#D9D9D9")
-
-    # head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     731.0,
-    #     646.0,
-    #     777.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600.0, 731.0, 646.0 - 600.0, "#999999")
-
-    # body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     777.0,
-    #     658.0,
-    #     825.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 777.0
-    x2, y2 = 663.0, 865.0
-
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
+        canvas.create_arc(
+            x1, y1, x2, y2,
+            start=357, extent=186,
+            fill="#999999", outline=""
+        )
+        if (i > 2): # only show 3 users
+            break
 
     canvas.create_text(
         881.0,
@@ -222,5 +168,10 @@ def dms(chat_client: client.ChatClient):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
+    incoming_thread = threading.Thread(target=handle_incoming)
+    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
+    incoming_thread.start()
+
     window.resizable(False, False)
     window.mainloop()
