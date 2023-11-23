@@ -24,7 +24,12 @@ class ClientMap():
         return self.__username_socket_map[username]
     
     def remove_socket_username(self, username):
-        self.__username_socket_map[username] = None
+        del self.__username_socket_map[username]
+
+    def remove_socket(self, socket: socket.socket):
+        for key, value in self.get_iterable_username_socket_map():
+                if value == socket:
+                    self.remove_socket_username(key)
 
     def username_taken(self, username):
         return username in self.__username_socket_map
@@ -59,7 +64,6 @@ class ClientMap():
             with open("chat_app/messages.json", 'w') as file:
                 file.write('[]')
                 self.__messages = []
-
         
 
 class ChatServer():
@@ -88,18 +92,18 @@ class ChatServer():
                     if ready_to_read:
                         data = client_socket.recv(1024).decode()
 
-                if not data:
-                    #todo make this remove the user that has this socket from the map
-                    #only get here if an empty string is sent which happens when the client
-                    #disconnects without a goodbye
-                    #go through self.__username_socket_map and remove the socket that is equal to client_socket
-                    # for key, value in self.clients.get_iterable_username_socket_map():
-                    #     print(key, value)
-                    #     print(client_socket)
-                    #     if value == client_socket:
-                    #         #self.clients.__username_socket_map[key] = None
-                    #         print("found it", key, value)
-                    continue
+                # if not data:
+                #     #todo make this remove the user that has this socket from the map
+                #     #only get here if an empty string is sent which happens when the client
+                #     #disconnects without a goodbye
+                #     #go through self.__username_socket_map and remove the socket that is equal to client_socket
+                #     # for key, value in self.clients.get_iterable_username_socket_map():
+                #     #     print(key, value)
+                #     #     print(client_socket)
+                #     #     if value == client_socket:
+                #     #         #self.clients.__username_socket_map[key] = None
+                #     #         print("found it", key, value)
+                #     continue
 
                 try:
                     request = ChatAppRequest(data)
@@ -132,10 +136,13 @@ class ChatServer():
                         response.fields["status"] = 201
 
                         logger.log_request(response)
+
             except Exception as e:
+                # if any exception occurs we print it and properly disconnect the socket
                 print(e)
-                #todo this needs to be fixed it would catch all exceptions and do nothing about them lol
-                continue
+                self.clients.remove_socket(client_socket)
+
+
         client_socket.close()
         self.clients.remove_socket_username(username)
 
@@ -178,6 +185,8 @@ class ChatServer():
                     #response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
             else: # to_user not online
                 response.fields["status"] = 401
+                self.clients.put_message(message)
+                self.clients.dump_messages()
         else:
             response.to_user = "unknown"
             response.fields["status"] = 301

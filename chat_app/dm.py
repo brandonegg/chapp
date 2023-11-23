@@ -182,6 +182,8 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
                 last_displayed_message = last_message
                 refresh_display()  # Call the function to refresh the GUI
 
+        
+
 
     # Start the thread to periodically check for new messages, without this, it only updates on sending a message
     check_messages_thread = threading.Thread(target=check_messages)

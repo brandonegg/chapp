@@ -52,6 +52,9 @@ class ChatClient():
   # todo: make this better, just made this wrapper for testing
   def handle_request(self):
     data = self.out_socket.recv(1024).decode()
+
+    request = None
+
     try:
       request = ChatAppRequest(data)
     except UnparsableRequestException as e:
@@ -61,41 +64,42 @@ class ChatClient():
       response.from_user = "server"
       response.fields["status"] = e.status_code
 
-    match request.type:
-      case "POST":
-        print("Received post:")
-        print(request)
-        message = {
-          "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
-          "message": request.fields["message"],
-          "from_user": request.from_user,
-          "to_user": request.to_user
-        }        
-        self.messages.append(message)
+    if request:
+      match request.type:
+        case "POST":
+          print("Received post:")
+          print(request)
+          message = {
+            "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+            "message": request.fields["message"],
+            "from_user": request.from_user,
+            "to_user": request.to_user
+          }        
+          self.messages.append(message)
 
-        #tell server it went right
-        response = ChatAppRequest()
-        response.type = "RESPONSE"
-        response.to_user = "server"
-        response.from_user = self.username
-        response.fields["status"] = 100
-        self.__send_response(response)
-      case "RESPONSE":
-        print("received response")
-        print(request)
-        return request
-      case "GOODBYE":
-        print("received goodbye")
-        print(request)
-        return request
-      case "INTRODUCE":
-        print("received introduce")
-        print(request)
-        return request
-      case _:
-        print("received unknown request")
-        print(request)
-        return request
+          #tell server it went right
+          response = ChatAppRequest()
+          response.type = "RESPONSE"
+          response.to_user = "server"
+          response.from_user = self.username
+          response.fields["status"] = 100
+          self.__send_response(response)
+        case "RESPONSE":
+          print("received response")
+          print(request)
+          return request
+        case "GOODBYE":
+          print("received goodbye")
+          print(request)
+          return request
+        case "INTRODUCE":
+          print("received introduce")
+          print(request)
+          return request
+        case _:
+          print("received unknown request")
+          print(request)
+          return request
     
   def __clear_incomming(self):
     """
