@@ -13,27 +13,17 @@ import select
 import threading
 import time
 import json
+import ast
 
 
 
-def dm(chat_client: client.ChatClient, username: str, owner_username: str):
-
-    def handle_incoming():
-        while True:
-            pause_event.wait()  # Wait if the pause event is set
-            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
-            if ready_to_read:
-                chat_client.out_socket.setblocking(True)
-                chat_client.handle_request()
-                chat_client.out_socket.setblocking(False)
-
-
+def dm(chat_client: client.ChatClient, to_user: str):
 
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
 
     # Filter messages involving the specified username
-    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
+    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
     sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
 
 
@@ -94,7 +84,7 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     def refresh_display():
         canvas.delete("all")  # Clear the canvas
 
-        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
+        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
         sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
         canvas.place(x = 0, y = 0)
         # bg rectangle
@@ -136,21 +126,12 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
         # Clear the Entry widget after sending the message
         message_entry.delete(0, 'end')
         # Code to send the message using chat_client
-        message = {
-            "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
-            "message": message_text,
-            "from_user": owner_username,
-            "to_user": username
-        }
-        chat_client.messages.append(message)
-        pause_event.set()
-        chat_client.out_socket.setblocking(True)
-        response = chat_client.post(username, message_text)
-        chat_client.out_socket.setblocking(False)
-        pause_event.clear()
-        print(response)
+        
+        response = chat_client.post(to_user, message_text)
 
-        refresh_display()
+        if response.fields["status"] == 100:
+            chat_client.messages.append(ast.literal_eval(response.fields["message"]))
+
 
     # Create an Entry widget for typing the message
     message_entry = Entry(window, font=("Inter", 12))
@@ -160,35 +141,14 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     send_button = Button(window, text="Send", command=send_message)
     send_button.place(x=900, y=900)
 
-    pause_event = threading.Event()
-
-    # it was too tough doing blocking and non blocking so i gave in an did a 2nd thread... 
-    incoming_thread = threading.Thread(target=handle_incoming)
-    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
-    incoming_thread.start()
-
-    def check_messages():
-        last_displayed_message = message
-
+    def refresh_loop():
         while True:
-            time.sleep(1)  # Check every second
-            chat_client.messages.sort(key=lambda x: x['timestamp'])  # Sort the messages
+            refresh_display()
+            time.sleep(1)
 
-            # Get the last message after sorting
-            last_message = chat_client.messages[-1]['message'] if chat_client.messages else ""
+    listening_thread = threading.Thread(target=refresh_loop, args=())
+    listening_thread.start()
 
-            # Check if the last message is different from the last displayed message
-            if last_message != last_displayed_message:
-                last_displayed_message = last_message
-                refresh_display()  # Call the function to refresh the GUI
-
-        
-
-
-    # Start the thread to periodically check for new messages, without this, it only updates on sending a message
-    check_messages_thread = threading.Thread(target=check_messages)
-    check_messages_thread.daemon = True
-    check_messages_thread.start()
 
     window.resizable(False, False)
     window.mainloop()

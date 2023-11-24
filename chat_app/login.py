@@ -3,6 +3,7 @@
 # https://github.com/ParthJadhav/Tkinter-Designer
 import client
 import json
+import ast
 
 from pathlib import Path
 
@@ -85,34 +86,27 @@ def draw_circle_from_rectangle(canvas, x1, y1, x2, y2, color):
 
 def login_pressed():
     username = entry_username.get()  # Get username from Entry field
-    print(username)
-    # Call login function from client.py
+
     chat_client = client.ChatClient(username)
     chat_client.connect_to("127.0.0.1", 6969)
     response = chat_client.introduce()
-    response_success = response.fields["status"] == 100 
+    response_success = response.fields["status"]
 
-    if response_success:
-        print(response)
-        data_string = response.fields["messages"]
-        start_index = data_string.find("[")
-        end_index = data_string.rfind("]") + 1
-        messages_str = data_string[start_index:end_index]
-        messages_str = messages_str.replace("'", '"')
-        messages = json.loads(messages_str)
+    if response_success == 100:
+        messages = response.fields["messages"]
+        chat_client.messages = ast.literal_eval(messages)
+        
         window.destroy()
         import dms
-        chat_client.messages = messages
-        dms.dms(chat_client, username)
+        dms.dms(chat_client)
     else:
-        # Handle failed login (e.g., show an error message)
         print("Login failed, status code:", response.fields["status"])
-        # make a label that says username logged in already
-        window.after(100, show_error_message)  # Schedule error message after a delay
+
+        window.after(100, show_error_message)
 
 def show_error_message():
-    error_label.place(x=615, y=250)  # Fixed position for error label
-    error_label.config(text="Login failed. Please try again.", fg="red", font=("Arial", 30))  # Update error label
+    error_label.place(x=615, y=250)
+    error_label.config(text="Login failed. Please try again.", fg="red", font=("Arial", 30))
 
 canvas = Canvas(
     window,

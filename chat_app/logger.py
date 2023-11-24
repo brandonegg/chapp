@@ -1,21 +1,18 @@
 from request import ChatAppRequest
+from request import STATUS_CODE_MAP as map
 
-def print_border_bottom(message: str):
+
+def print_border_bottom(message: str) -> None:
   print(message)
   print("-------------------------------")
 
-def log_request(request: ChatAppRequest):
+
+def log_request(request: ChatAppRequest) -> None:
   print("Received request:")
   print_border_bottom(request)
 
-def log_response(response: ChatAppRequest):
+
+def log_response(response: ChatAppRequest) -> None:
   print("Sending response:")
   print_border_bottom(response)
-
-def log_send_request(request: ChatAppRequest):
-  print("Sending request:")
-  print_border_bottom(request)
-
-def log_receive_response(response: ChatAppRequest):
-  print("Received response:")
-  print_border_bottom(response)
+  #print(map.get(response.fields["status"]))

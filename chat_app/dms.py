@@ -10,22 +10,8 @@ from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 import client
 import dm
-import threading
-import select
 
-def dms(chat_client: client.ChatClient, username: str):
-    def handle_incoming():
-        chat_client.out_socket.setblocking(False)
-        while True:
-            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
-            if ready_to_read:
-                chat_client.out_socket.setblocking(True)
-                chat_client.handle_request()
-
-    users = set(message['from_user'] for message in chat_client.messages) | set(message['to_user'] for message in chat_client.messages)
-    set.remove(users, username)
-    print(users)
-
+def dms(chat_client: client.ChatClient):
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
 
@@ -33,6 +19,8 @@ def dms(chat_client: client.ChatClient, username: str):
     def relative_to_assets(path: str) -> Path:
         return ASSETS_PATH / Path(path)
 
+    users = set(message['from_user'] for message in chat_client.messages)
+    set.remove(users, chat_client.username)
 
     window = Tk()
 
@@ -95,7 +83,7 @@ def dms(chat_client: client.ChatClient, username: str):
     
     def circle_click(button_username):
         window.destroy()
-        dm.dm(chat_client, button_username, username)
+        dm.dm(chat_client, button_username)
 
     def dm_button(canvas, x, y, diameter, color, button_username):
         def on_click():
@@ -168,10 +156,6 @@ def dms(chat_client: client.ChatClient, username: str):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
-
-    incoming_thread = threading.Thread(target=handle_incoming)
-    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
-    incoming_thread.start()
 
     window.resizable(False, False)
     window.mainloop()
