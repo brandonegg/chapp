@@ -7,8 +7,9 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Label
 import client
+import dm
 
 def dms(chat_client: client.ChatClient):
     OUTPUT_PATH = Path(__file__).parent
@@ -18,6 +19,9 @@ def dms(chat_client: client.ChatClient):
     def relative_to_assets(path: str) -> Path:
         return ASSETS_PATH / Path(path)
 
+    users = set(message['from_user'] for message in chat_client.messages)
+    if chat_client.username in users:
+        set.remove(users, chat_client.username)
 
     window = Tk()
 
@@ -77,6 +81,17 @@ def dms(chat_client: client.ChatClient):
 
     def draw_circle(canvas, x, y, diameter, color):
         canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    
+    def circle_click(button_username):
+        window.destroy()
+        dm.dm(chat_client, button_username)
+
+    def dm_button(canvas, x, y, diameter, color, button_username):
+        def on_click():
+            circle_click(button_username)
+        
+        button = Button(canvas, command=on_click, bg=color, bd=0, activebackground=color)
+        button.place(x=x, y=y, width=diameter, height=diameter)
 
     canvas = Canvas(
         window,
@@ -97,122 +112,45 @@ def dms(chat_client: client.ChatClient):
         952.0,
         fill="#332222",
         outline="")
+    
+    error_label = Label(window, text="", fg="red")  # Label to show error message
 
-    # DMs
-    draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
-    draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
-    draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
 
-    # canvas.create_rectangle(
-    #     557.0,
-    #     340.0,
-    #     689.0,
-    #     472.0,
-    #     fill="#D9D9D9",
-    #     outline="")
-    # whiteish circle
-    draw_circle(canvas, 557.0, 340.0, 689.0 - 557.0, "#D9D9D9")
+    #for each user do a rectangle whiteish circle, head, and body
+    for i, user in enumerate(users):
+        # user label
+        canvas.create_text(
+            680.0,
+            330.0 + i * 180.0,
+            anchor="nw",
+            text= user,
+            fill="#FFFFFF",
+            font=("Inter", 30 * -1)
+        )
 
-    #head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     360.0,
-    #     646.0,
-    #     406.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
+        # DM rectangles
+        draw_rounded_rectangle(canvas, 623.0, 362.0 + i * 180.0, 675.0, 89.0, 35.0, "#800909")
 
-    #body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     406.0,
-    #     658.0,
-    #     454.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 406.0
-    x2, y2 = 663.0, 494.0
+        # button
+        dm_button(canvas, 1300.0, 340.0 + i * 179.0, 132.0, "#FFFFFF", user)
 
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
+        # circle pfp backgrounds
+        draw_circle(canvas, 557.0, 340.0 + i * 179.0, 132.0, "#D9D9D9")
 
-    # circle pfp background
-    draw_circle(canvas, 557.0, 519.0, 689.0 - 557.0, "#D9D9D9")
+        # heads
+        draw_circle(canvas, 600.0, 360.0 + i * 179.0, 646.0 - 600.0, "#999999")
 
-    # head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     539.0,
-    #     646.0,
-    #     585.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600.0, 539.0, 646.0 - 600.0, "#999999")
+        # bodies
+        x1, y1 = 584.0, 404.0 + i * 179.0
+        x2, y2 = 663.0, 492.0 + i * 179.0
 
-    # body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     585.0,
-    #     658.0,
-    #     633.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 585.0
-    x2, y2 = 663.0, 673.0
-
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
-
-    # canvas.create_rectangle(
-    #     623.0,
-    #     732.0,
-    #     1298.0,
-    #     821.0,
-    #     fill="#800909",
-    #     outline="")
-
-    # canvas.create_rectangle(
-    #     557.0,
-    #     711.0,
-    #     689.0,
-    #     843.0,
-    #     fill="#D9D9D9",
-    #     outline="")
-    draw_circle(canvas, 557.0, 711.0, 689.0 - 557.0, "#D9D9D9")
-
-    # head
-    # canvas.create_rectangle(
-    #     600.0,
-    #     731.0,
-    #     646.0,
-    #     777.0,
-    #     fill="#999999",
-    #     outline="")
-    draw_circle(canvas, 600.0, 731.0, 646.0 - 600.0, "#999999")
-
-    # body
-    # canvas.create_rectangle(
-    #     589.0,
-    #     777.0,
-    #     658.0,
-    #     825.0,
-    #     fill="#999999",
-    #     outline="")
-    x1, y1 = 584.0, 777.0
-    x2, y2 = 663.0, 865.0
-
-    canvas.create_arc(
-        x1, y1, x2, y2,
-        start=357, extent=186,
-        fill="#999999", outline=""
-    )
+        canvas.create_arc(
+            x1, y1, x2, y2,
+            start=357, extent=186,
+            fill="#999999", outline=""
+        )
+        if (i > 2): # only show 3 users
+            break
 
     canvas.create_text(
         881.0,
@@ -222,5 +160,44 @@ def dms(chat_client: client.ChatClient):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
+    def new_dm():
+        message_text = message_entry.get()  # Get the text from the Entry widget
+        if message_text == "":
+            return
+        # Clear the Entry widget after sending the message
+        message_entry.delete(0, 'end')
+        # Code to send the message using chat_client
+        window.destroy()
+        dm.dm(chat_client, message_text)
+
+    def logout():
+        response = chat_client.goodbye()
+
+        if response.fields["status"] == 100:
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
+
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
+
+
+    # Create an Entry widget for typing the message
+    message_entry = Entry(window, font=("Inter", 12))
+    message_entry.place(x=600, y=900)
+
+    # Create a Button to send the message
+    send_button = Button(window, text="Open New/Old DM", command=new_dm)
+    send_button.place(x=900, y=900)
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
+
     window.resizable(False, False)
     window.mainloop()

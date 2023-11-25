@@ -1,12 +1,13 @@
 from exceptions import UnparsableRequestException
-import time
+
 
 REQUEST_TYPE_REQUIRED_FIELD_MAPS: dict[str, set[str]] = {
     "INTRODUCE": set(),
-    "RESPONSE": {"status"},
+    "RESPONSE": {"status", "for"},
     "POST": {"message"},
     "GOODBYE": set()
 }
+
 
 STATUS_CODE_MAP = {
     100: "SUCCESS", # TRANSPORT SUCCESS 100-199
@@ -15,59 +16,72 @@ STATUS_CODE_MAP = {
     202: "UNPARSABLE_FIELD",
     203: "DUPLICATE_FIELD",
     204: "MISSING_REQUIRED_FIELD",
+    205: "MALFORMED_ID_LINE",
     301: "USERNAME_TAKEN", # INVALID INPUT ERRORS 300-399
     302: "INVALID_TO_USER",
     303: "INVALID_FROM_USER",
-    401: "TO_USER_NOT_ONLINE"
+    304: "NOT_INTRODUCED",
+    400: "SERVER_ERROR",
 }
 
 
 FIELD_TYPE_MAP = {
     "status": int,
     "message": str,
+    "for": int
 }
 
+
 class ChatAppRequest():
-    def __init__(self, body: str | None = None):
+    __next_id = 0
+
+    def __init__(self, body: str = None):
         self.type: str = None
         self.to_user: str = None
         self.from_user: str = None
+        self.__id: int = None
         self.fields: dict[str, ] = {}
 
-        if not body is None:
+        if body:
             self.from_body(body)
+        else:
+            self.__id = self.__get_next_id()
 
-    def add_field(self, key: str, value):
-        self.fields[key] = value
 
-    def from_body(self, body: str):
+    def get_id(self) -> int:
+        return self.__id
+    
+    
+    def __get_next_id(self) -> int:
+        id = ChatAppRequest.__next_id
+        ChatAppRequest.__next_id += 1
+        return id
+
+
+    def from_body(self, body: str) -> None:
         if len(body) == 0:
             raise UnparsableRequestException(200, "Message body empty")
-        print(body)
         lines = body.split("\\\n")
+
         self.__parse_action_line(lines[0])
 
-        if len(lines) > 1:
-            self.__parse_fields(lines[1:])
+        self.__parse_id_line(lines[1])
+
+        if len(lines) > 2:
+            self.__parse_fields(lines[2:])
 
         self.__validate_request()
 
-    def __parse_action_line(self, line: str):
-        """
-        Parses action line and sets instance variables action, from, and
-        to based on input. This function DOES NOT verify the validity of
-        passed values, but does verify that it is parsible.
 
-        Parameters
-        ----------
-        line : str
-            The action line to parse
+    def __parse_id_line(self, line: str) -> None:
+        split = line.split(":")
+        if not len(split) == 2:
+            raise UnparsableRequestException(205, "Unreadable ID")
+        
+        self.__id = split[1]
 
-        Raises
-        ------
-        UnparsableRequestException
-            When action line is unparsible
-        """
+
+    def __parse_action_line(self, line: str) -> None:
         split = line.split("\t")
         if not len(split) == 2:
             raise UnparsableRequestException(200, "Action line unreadable")
@@ -82,15 +96,8 @@ class ChatAppRequest():
         self.from_user = path_str[0]
         self.to_user = path_str[1]
 
-    def __validate_request(self):
-        """
-        Checks that request object meets valid request criteria.
 
-        Raises
-        ------
-        UnparsableRequestException
-            When an instance variable of the request object is invalid.
-        """
+    def __validate_request(self) -> None:
         # Validate type is real
         if not self.type in REQUEST_TYPE_REQUIRED_FIELD_MAPS:
             raise UnparsableRequestException(201, f"Action type `{self.type}` unacceptable")
@@ -100,13 +107,7 @@ class ChatAppRequest():
             raise UnparsableRequestException(204, f"Required field missing")
 
 
-    def __parse_fields(self, lines: list[str]):
-        """
-        Raises
-        ------
-        UnparsableRequestException
-            When field value line is unparsable.
-        """
+    def __parse_fields(self, lines: list[str]) -> None:
         pairs = {}
 
         for field_line in lines:
@@ -114,7 +115,6 @@ class ChatAppRequest():
             # for the client to receive all the data
             if field_line != '':
                 split_line = field_line.split(":")
-                print(split_line)
 
                 if len(split_line) < 2:
                     raise UnparsableRequestException(202, f"Unreadable field-value pair passed")
@@ -135,29 +135,12 @@ class ChatAppRequest():
 
         self.fields = pairs
 
-    def __str__(self) -> str:
-        """
-        Convert instance to string sent over socket. This function does check the validty
-        of passed fields, but does verify parsibility
 
-        Returns
-        -------
-        string
-            Request string
-        """
+    def __str__(self) -> str:
         fieldlines = [f"{field}: {str(self.fields[field])}" for field in self.fields]
         
         return "\\\n".join([
-            f"{self.type}\t{self.from_user}->{self.to_user}",
+            f"{self.type}\t{self.from_user}->{self.to_user}",f"ID:{self.__id}",
             *fieldlines
         ])
-
-# class Message(ChatAppRequest):
-#     def __init__(self, timestamp, message: str, from_user: str, to_user: str):
-#         super().__init__()
-
-#         self.timestamp = timestamp
-#         self.add_field("timestamp", timestamp)
-#         self.add_field("message", message)
-#         self.from_user = from_user
-#         self.to_user = to_user
+    
