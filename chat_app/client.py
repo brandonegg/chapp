@@ -29,18 +29,23 @@ class ChatClient():
 
   def client_loop(self) -> None:
     received_data = b''
+    self.out_socket.settimeout(5)  # Set a 5-second timeout
     while True:
-      chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
-      received_data += chunk
-              
-      if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
-          response = ChatAppRequest(received_data.decode())
+      try:
+        chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
+        received_data += chunk
+                
+        if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
+            response = ChatAppRequest(received_data.decode())
 
-          if response.type == "POST":
-            self.messages.append(ast.literal_eval(response.fields["message"]))
-          else:
-            self.responses.append(response)
-          received_data = b''
+            if response.type == "POST":
+              self.messages.append(ast.literal_eval(response.fields["message"]))
+            else:
+              self.responses.append(response)
+            received_data = b''
+      except socket.timeout:
+        print("Socket timed out!")
+        return
 
 
   # gui needs to get the messages from the response.fields["messages"]
