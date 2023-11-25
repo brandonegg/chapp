@@ -7,156 +7,222 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, font, Label
+import client
+import threading
+import time
+import ast
+
+window_destroyed = False
+
+last_message = {}  # Initialize an empty dictionary as the global variable
+last_message_lock = threading.Lock()
+
+def update_last_message(new_message):
+    global last_message
+    with last_message_lock:
+        last_message = new_message
+
+def display_last_message():
+    global last_message
+    with last_message_lock:
+        return last_message
+
+def dm(chat_client: client.ChatClient, to_user: str):
+
+    OUTPUT_PATH = Path(__file__).parent
+    ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
+
+    # Filter messages involving the specified username
+    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
+    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
+
+    def relative_to_assets(path: str) -> Path:
+        return ASSETS_PATH / Path(path)
 
 
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
+    window = Tk()
 
+    window.geometry("1920x1080")
+    window.configure(bg = "#FFFFFF")
 
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
+    canvas = Canvas(
+        window,
+        bg = "#FFFFFF",
+        height = 1080,
+        width = 1920,
+        bd = 0,
+        highlightthickness = 0,
+        relief = "ridge"
+    )
 
-
-window = Tk()
-
-window.geometry("1920x1080")
-window.configure(bg = "#FFFFFF")
-
-def draw_rounded_rectangle(canvas, x, y, width, height, radius, color):
+    canvas.place(x = 0, y = 0)
+    # bg rectangle
     canvas.create_rectangle(
-        x + radius,
-        y,
-        x + width - radius,
-        y + height,
-        fill=color,
-        outline=color
-    )
-    canvas.create_rectangle(
-        x,
-        y + radius,
-        x + width,
-        y + height - radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y,
-        x + 2 * radius,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y,
-        x + width,
-        y + 2 * radius,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x,
-        y + height - 2 * radius,
-        x + 2 * radius,
-        y + height,
-        fill=color,
-        outline=color
-    )
-    canvas.create_oval(
-        x + width - 2 * radius,
-        y + height - 2 * radius,
-        x + width,
-        y + height,
-        fill=color,
-        outline=color
+        483.0,
+        129.0,
+        1437.0,
+        952.0,
+        fill="#332222",
+        outline="")
+
+    canvas.create_text(
+        909.0,
+        179.0,
+        anchor="nw",
+        text="DM\n",
+        fill="#FFFFFF",
+        font=("Inter", 60 * -1)
     )
 
-def draw_circle(canvas, x, y, diameter, color):
-    canvas.create_oval(x, y, x + diameter, y + diameter, fill=color, outline="")
+    error_label = Label(window, text="", fg="red")  # Label to show error message
 
 
-canvas = Canvas(
-    window,
-    bg = "#FFFFFF",
-    height = 1080,
-    width = 1920,
-    bd = 0,
-    highlightthickness = 0,
-    relief = "ridge"
-)
+    def wrap_text(canvas, text, width):
+        lines = []
+        words = text.split()
+        current_line = ''
+        canvas_font = font.Font(family="Inter", size=14)  # Replace with your desired font family and size
+        for word in words:
+            # Get the width of the current line with the next word
+            current_width = canvas_font.measure(current_line + word)
+            if current_width <= width:
+                current_line += word + ' '
+            else:
+                lines.append(current_line)
+                current_line = word + ' '
+        lines.append(current_line)
+        return ['\n'.join(lines), len(lines)]
 
-canvas.place(x = 0, y = 0)
-# bg rectangle
-canvas.create_rectangle(
-    483.0,
-    129.0,
-    1437.0,
-    952.0,
-    fill="#332222",
-    outline="")
+    def display_messages(y_offset,max_width,sorted_messages):        
+        lines_displayed = 0
+        for message in sorted_messages:
+            if lines_displayed == 0:
+                update_last_message(message)
 
-draw_rounded_rectangle(canvas, 623.0, 362.0, 1298.0-623.0, 451.0-362.0, 35, "#800909")
+            wrapped_text = wrap_text(canvas, f"{message['timestamp']} - {message['from_user']}: {message['message']}", max_width)
+            lines_displayed += wrapped_text[1]
+            
+            if lines_displayed > 24:
+                break
+            
+            y_offset -= 26 * wrapped_text[1]  # Increment Y offset to display next message
 
-draw_rounded_rectangle(canvas, 623.0, 540.0, 1298.0-623.0, 629.0-540.0, 35, "#800909")
+            canvas.create_text(
+                600,
+                y_offset,
+                anchor="nw",
+                text=wrapped_text[0],
+                fill="#FFFFFF",
+                font=("Inter", 14)
+            )
+    
+    y_offset = 870  # Initial Y offset for displaying messages
+    max_width = 500
+    display_messages(y_offset,max_width,sorted_messages)
 
-#circle bg
-draw_circle(canvas, 557, 340.0, 689.0 - 557.0, "#D9D9D9")
+    # Function to refresh the display with updated messages
+    def refresh_display():
+        global last_message 
+        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
+        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
 
-#head
-draw_circle(canvas, 600, 360.0, 646.0 - 600.0, "#999999")
+        # if the last message has changed don't clear the canvas
+        # last soreted_messages
 
-#body
-x1, y1 = 584.0, 406.0
-x2, y2 = 663.0, 494.0
+        last_message = display_last_message()
+        if sorted_messages and last_message:
+            if last_message['from_user'] == sorted_messages[0]['from_user'] and last_message['to_user'] == sorted_messages[0]['to_user'] and last_message['message'] == sorted_messages[0]['message']:                
+                return
+        
+        if canvas:
+            canvas.delete("all")  # Clear the canvas
 
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
+        canvas.place(x = 0, y = 0)
+        # bg rectangle
+        canvas.create_rectangle(
+            483.0,
+            129.0,
+            1437.0,
+            952.0,
+            fill="#332222",
+            outline="")
 
-#circle bg
-draw_circle(canvas, 1232.0, 519.0, 1364.0 - 1232.0, "#D9D9D9")
+        canvas.create_text(
+            909.0,
+            179.0,
+            anchor="nw",
+            text="DM\n",
+            fill="#FFFFFF",
+            font=("Inter", 60 * -1)
+        )
 
-#head
-draw_circle(canvas, 1275.0, 539.0, 1321.0 - 1275.0, "#999999")
+        # Display the messages
+        y_offset = 870  # Initial Y offset for displaying messages
+        max_width = 500
+        display_messages(y_offset,max_width,sorted_messages)
 
-#body
-x1, y1 = 1259.0, 585.0
-x2, y2 = 1338.0, 673.0
+    
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
+    
 
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
+    # Function to send the message when the button is clicked
+    def send_message():
+        message_text = message_entry.get()  # Get the text from the Entry widget
+        if message_text == "":
+            return
+        # Clear the Entry widget after sending the message
+        message_entry.delete(0, 'end')
+        # Code to send the message using chat_client
+        
+        response = chat_client.post(to_user, message_text)
 
-draw_rounded_rectangle(canvas, 623.0, 732.0, 1298.0-623.0, 821.0-732.0, 35, "#800909")
+        if response.fields["status"] == 100:
+            chat_client.messages.append(ast.literal_eval(response.fields["message"]))
+        else:
+            print("Login failed, status code:", response.fields["status"])
 
-draw_circle(canvas, 557, 711.0, 689.0 - 557.0, "#D9D9D9")
+            window.after(100, show_error_message)
 
-#head
-draw_circle(canvas, 600, 731.0, 646.0 - 600.0, "#999999")
 
-#body
-x1, y1 = 584.0, 777.0
-x2, y2 = 663.0, 865.0
+    # Create an Entry widget for typing the message
+    message_entry = Entry(window, font=("Inter", 12))
+    message_entry.place(x=600, y=900)
 
-canvas.create_arc(
-    x1, y1, x2, y2,
-    start=357, extent=186,
-    fill="#999999", outline=""
-)
+    # Create a Button to send the message
+    send_button = Button(window, text="Send", command=send_message)
+    send_button.place(x=900, y=900)
 
-canvas.create_text(
-    909.0,
-    179.0,
-    anchor="nw",
-    text="DM\n",
-    fill="#FFFFFF",
-    font=("Inter", 60 * -1)
-)
-window.resizable(False, False)
-window.mainloop()
+    def refresh_loop():
+        global window_destroyed
+        window_destroyed = False
+        while not window_destroyed:
+            refresh_display()
+            time.sleep(1)
+
+    listening_thread = threading.Thread(target=refresh_loop, args=())
+    listening_thread.start()
+
+    def logout():
+        response = chat_client.goodbye()
+
+        if response.fields["status"] == 100:
+            global window_destroyed
+            window_destroyed = True
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
+
+
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
+
+    window.resizable(False, False)
+    window.mainloop()
