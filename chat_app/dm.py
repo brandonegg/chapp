@@ -7,15 +7,24 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, font
 import client
-import select
 import threading
 import time
-import json
 import ast
 
+last_message = {}  # Initialize an empty dictionary as the global variable
+last_message_lock = threading.Lock()
 
+def update_last_message(new_message):
+    global last_message
+    with last_message_lock:
+        last_message = new_message
+
+def display_last_message():
+    global last_message
+    with last_message_lock:
+        return last_message
 
 def dm(chat_client: client.ChatClient, to_user: str):
 
@@ -65,27 +74,57 @@ def dm(chat_client: client.ChatClient, to_user: str):
         font=("Inter", 60 * -1)
     )
 
+    def wrap_text(canvas, text, width):
+        lines = []
+        words = text.split()
+        current_line = ''
+        canvas_font = font.Font(family="Inter", size=14)  # Replace with your desired font family and size
+        for word in words:
+            # Get the width of the current line with the next word
+            current_width = canvas_font.measure(current_line + word)
+            if current_width <= width:
+                current_line += word + ' '
+            else:
+                lines.append(current_line)
+                current_line = word + ' '
+        lines.append(current_line)
+        return ['\n'.join(lines), len(lines)]
+
+    def display_messages(y_offset,max_width,sorted_messages):
+        # Iterate over the last 20 messages (or less if there are fewer than 20 messages)
+        # until i get pages working, or never teehee
+        for message in sorted_messages[-20:]:
+            wrapped_text = wrap_text(canvas, f"{message['timestamp']} - {message['from_user']}: {message['message']}", max_width)
+            canvas.create_text(
+                600,
+                y_offset,
+                anchor="nw",
+                text=wrapped_text[0],
+                fill="#FFFFFF",
+                font=("Inter", 14)
+            )
+            y_offset += 30 * wrapped_text[1]  # Increment Y offset to display next message
+            update_last_message(message)
+    
     y_offset = 300  # Initial Y offset for displaying messages
-    # Iterate over the last 20 messages (or less if there are fewer than 20 messages)
-    # until i get pages working, or never teehee
-    for message in sorted_messages[-20:]:
-        text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
-        canvas.create_text(
-            600,
-            y_offset,
-            anchor="nw",
-            text=text,
-            fill="#FFFFFF",
-            font=("Inter", 14)
-        )
-        y_offset += 30  # Increment Y offset to display next message
+    max_width = 500
+    display_messages(y_offset,max_width,sorted_messages)
 
     # Function to refresh the display with updated messages
     def refresh_display():
-        canvas.delete("all")  # Clear the canvas
-
+        global last_message 
         filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
         sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
+
+        # if the last message has changed don't clear the canvas
+        # last soreted_messages
+        last_message = display_last_message()
+        if sorted_messages:
+            if last_message['from_user'] == sorted_messages[-1]['from_user'] and last_message['to_user'] == sorted_messages[-1]['to_user'] and last_message['message'] == sorted_messages[-1]['message']:                
+                return
+        
+        canvas.delete("all")  # Clear the canvas
+
         canvas.place(x = 0, y = 0)
         # bg rectangle
         canvas.create_rectangle(
@@ -105,18 +144,10 @@ def dm(chat_client: client.ChatClient, to_user: str):
             font=("Inter", 60 * -1)
         )
 
+        # Display the messages
         y_offset = 300  # Initial Y offset for displaying messages
-        for message in sorted_messages[-20:]:
-            text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
-            canvas.create_text(
-                600,
-                y_offset,
-                anchor="nw",
-                text=text,
-                fill="#FFFFFF",
-                font=("Inter", 14)
-            )
-            y_offset += 30  # Increment Y offset for the next message
+        max_width = 500
+        display_messages(y_offset,max_width,sorted_messages)
 
     # Function to send the message when the button is clicked
     def send_message():

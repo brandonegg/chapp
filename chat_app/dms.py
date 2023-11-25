@@ -20,7 +20,8 @@ def dms(chat_client: client.ChatClient):
         return ASSETS_PATH / Path(path)
 
     users = set(message['from_user'] for message in chat_client.messages)
-    set.remove(users, chat_client.username)
+    if chat_client.username in users:
+        set.remove(users, chat_client.username)
 
     window = Tk()
 
@@ -156,6 +157,24 @@ def dms(chat_client: client.ChatClient):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
+    def new_dm():
+        message_text = message_entry.get()  # Get the text from the Entry widget
+        if message_text == "":
+            return
+        # Clear the Entry widget after sending the message
+        message_entry.delete(0, 'end')
+        # Code to send the message using chat_client
+        window.destroy()
+        dm.dm(chat_client, message_text)
+
+    # Create an Entry widget for typing the message
+    message_entry = Entry(window, font=("Inter", 12))
+    message_entry.place(x=600, y=900)
+
+    # Create a Button to send the message
+    send_button = Button(window, text="Open New/Old DM", command=new_dm)
+    send_button.place(x=900, y=900)
 
     window.resizable(False, False)
     window.mainloop()
