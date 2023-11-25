@@ -7,7 +7,7 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, font
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, font, Label
 import client
 import threading
 import time
@@ -72,6 +72,9 @@ def dm(chat_client: client.ChatClient, to_user: str):
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
+    error_label = Label(window, text="", fg="red")  # Label to show error message
+
 
     def wrap_text(canvas, text, width):
         lines = []
@@ -156,6 +159,12 @@ def dm(chat_client: client.ChatClient, to_user: str):
         max_width = 500
         display_messages(y_offset,max_width,sorted_messages)
 
+    
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f'Sending Message Failed. status code:{status}', fg="red", font=("Arial", 25))
+    
+
     # Function to send the message when the button is clicked
     def send_message():
         message_text = message_entry.get()  # Get the text from the Entry widget
@@ -169,6 +178,10 @@ def dm(chat_client: client.ChatClient, to_user: str):
 
         if response.fields["status"] == 100:
             chat_client.messages.append(ast.literal_eval(response.fields["message"]))
+        else:
+            print("Login failed, status code:", response.fields["status"])
+
+            window.after(100, show_error_message)
 
 
     # Create an Entry widget for typing the message

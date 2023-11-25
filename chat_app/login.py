@@ -105,8 +105,8 @@ def login_pressed():
         window.after(100, show_error_message)
 
 def show_error_message():
-    error_label.place(x=615, y=250)
-    error_label.config(text="Login failed. Please try again.", fg="red", font=("Arial", 30))
+    error_label.place(x=580, y=250)
+    error_label.config(text="Login failed. Username already logged in.", fg="red", font=("Arial", 25))
 
 canvas = Canvas(
     window,
