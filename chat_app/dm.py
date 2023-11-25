@@ -127,8 +127,6 @@ def dm(chat_client: client.ChatClient, to_user: str):
 
         last_message = display_last_message()
         if sorted_messages and last_message:
-            print("Sort:", sorted_messages[0])
-            print("Last:",last_message)
             if last_message['from_user'] == sorted_messages[0]['from_user'] and last_message['to_user'] == sorted_messages[0]['to_user'] and last_message['message'] == sorted_messages[0]['message']:                
                 return
         
