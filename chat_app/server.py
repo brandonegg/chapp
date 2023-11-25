@@ -3,64 +3,74 @@ import threading
 import time
 from exceptions import UnparsableRequestException
 from request import ChatAppRequest
-#from request import Message
 import logger
 import json
 import argparse
-import select
+
 
 class ClientMap():
     def __init__(self):
-        self.__username_socket_map:dict = {}
+        self.__username_socket_map: dict[str, socket.socket] = {}
         self.__messages: list[dict[str, str]] = []
 
-    def get_iterable_username_socket_map(self):
-        return self.__username_socket_map.items()
 
-    def set_socket_username(self, username, socket):
+    def set_socket_username(self, username, socket) -> None:
         self.__username_socket_map[username] = socket
+
 
     def get_socket_by_username(self, username: str) -> socket.socket:
         return self.__username_socket_map[username]
     
-    def remove_socket_username(self, username):
+
+    def remove_socket_by_username(self, username) -> None:
         del self.__username_socket_map[username]
 
-    def remove_socket(self, socket: socket.socket):
-        for key, value in self.get_iterable_username_socket_map():
-                if value == socket:
-                    self.remove_socket_username(key)
 
-    def username_taken(self, username):
+    def remove_socket(self, socket: socket.socket) -> None:
+        for key, value in self.__username_socket_map.items():
+                if value == socket:
+                    self.remove_socket_by_username(key)
+                    return
+        socket.close()
+
+
+    def username_taken(self, username) -> bool:
         return username in self.__username_socket_map
     
-    def username_not_taken(self, username):
-        return not self.username_taken(username)
-    
-    def print_messages(self):
+
+    def print_messages(self) -> None:
         print(self.__messages)
 
-    def put_message(self, message: dict[str, ]):
+
+    def put_message(self, message: dict[str, str]) -> None:
         self.__messages.append(message)
     
-    def dump_messages(self):
+
+    def dump_messages(self) -> None:
         with open("chat_app/messages.json", 'w') as file:
             json.dump(self.__messages, file, indent=4)
     
+
     def find_messages(self, user: str) -> list[dict[str, str]]:
-        return [msg for msg in self.__messages if msg["from_user"] == user or msg["to_user"] == user]
+        return [msg for msg in self.__messages 
+                if msg["from_user"] == user or msg["to_user"] == user]
     
-    def load_messages(self):
+    
+    def load_messages(self) -> None:
         try:
             with open("chat_app/messages.json", 'r') as file:
                 self.__messages = json.load(file)
+
         except FileNotFoundError:
             print("File not found. Creating a new file.")
+
             with open("chat_app/messages.json", 'w') as file:
                 file.write('[]')
                 self.__messages = []
+
         except json.JSONDecodeError:
             print("Invalid JSON format in the file. Wiping the file.")
+
             with open("chat_app/messages.json", 'w') as file:
                 file.write('[]')
                 self.__messages = []
@@ -71,39 +81,18 @@ class ChatServer():
         self.socket_in = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = ClientMap()
 
-    def listen_to(self, port: int):
+
+    def listen_to(self, port: int) -> None:
         self.__bind_socket_in(port)
         self.socket_in.listen()
         self.clients.load_messages()
         self.__request_handler_loop()
 
-    def handle_request(self, client_socket: socket.socket, client_address: str):
-        listen = True
-        while listen:
+
+    def handle_request(self, client_socket: socket.socket) -> None:
+        while True:
             try:
-                data = ""
-                client_socket.setblocking(False)  # Set the socket to non-blocking mode, this means that the socket.recv() method will return immediately even if no data was received
-
-                #this lets the server look for messages without compeletely blocking this socket for other server threads
-                ready_to_read = False
-                while not ready_to_read:
-                    ready_to_read, _, _ = select.select([client_socket], [], [], 0.1)  # Check if the socket is ready to read
-
-                    if ready_to_read:
-                        data = client_socket.recv(1024).decode()
-
-                # if not data:
-                #     #todo make this remove the user that has this socket from the map
-                #     #only get here if an empty string is sent which happens when the client
-                #     #disconnects without a goodbye
-                #     #go through self.__username_socket_map and remove the socket that is equal to client_socket
-                #     # for key, value in self.clients.get_iterable_username_socket_map():
-                #     #     print(key, value)
-                #     #     print(client_socket)
-                #     #     if value == client_socket:
-                #     #         #self.clients.__username_socket_map[key] = None
-                #     #         print("found it", key, value)
-                #     continue
+                data = client_socket.recv(1024).decode()
 
                 try:
                     request = ChatAppRequest(data)
@@ -114,7 +103,9 @@ class ChatServer():
                     response.from_user = "server"
                     response.fields["status"] = e.status_code
 
-                    logger.log_request(response)
+                    logger.log_response(response)
+                    
+                logger.log_request(request)
                 
                 match request.type:
                     case "INTRODUCE":
@@ -122,12 +113,8 @@ class ChatServer():
                     case "POST":
                         self.__handle_post(request, client_socket)
                     case "GOODBYE":
-                        # if goodbye is successful, end the loop
-                        listen = self.__handle_goodbye(request, client_socket)
-                        username = request.from_user
-                        pass
-                    case "RESPONSE":
-                        pass # TODO
+                        self.__handle_goodbye(request, client_socket)
+                        return
                     case _:
                         response = ChatAppRequest()
                         response.type = "RESPONSE"
@@ -135,68 +122,20 @@ class ChatServer():
                         response.from_user = "server"
                         response.fields["status"] = 201
 
-                        logger.log_request(response)
+                        logger.log_response(response)
 
             except Exception as e:
                 # if any exception occurs we print it and properly disconnect the socket
                 print(e)
                 self.clients.remove_socket(client_socket)
+                return
 
 
-        client_socket.close()
-        self.clients.remove_socket_username(username)
-
-    def __handle_post(self, request: ChatAppRequest, socket: socket.socket):
-        logger.log_request(request)
-
+    def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket) -> None:
         response = ChatAppRequest()
         response.type = "RESPONSE"
         response.from_user = "server"
-        response.to_user = request.from_user
-        
-
-        if self.clients.username_taken(request.from_user):
-
-            message = {
-                "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
-                "message": request.fields["message"],
-                "from_user": request.from_user,
-                "to_user": request.to_user
-            }
-
-            #forward the request to the to_user and see if it worked
-            if (self.clients.username_taken(request.to_user)):
-                logger.log_send_request(request)
-                self.__forward_request(request, self.clients.get_socket_by_username(request.to_user))
-                to_user_socket = self.clients.get_socket_by_username(request.to_user)
-                to_user_socket.setblocking(True)  # we want this to wait here until the client responds, so set it to blocking mode
-                received_data = to_user_socket.recv(1024).decode()
-                to_user_socket.setblocking(False)  # blocking operation is done, free this socket for other server threads
-
-                to_user_response = ChatAppRequest(received_data)
-                logger.log_receive_response(to_user_response)
-                response.fields["status"] = to_user_response.fields["status"]
-                if response.fields["status"] == 100:       
-                    # client says it was a success so add the message to the list of messages     
-                    self.clients.put_message(message)
-                    self.clients.dump_messages()
-
-                    #was needed before this was added, if it gets stuck this may be the problem
-                    #response.fields["messages"] = str(self.clients.find_messages(request.from_user)) + "\\\n"
-            else: # to_user not online
-                response.fields["status"] = 401
-                self.clients.put_message(message)
-                self.clients.dump_messages()
-        else:
-            response.to_user = "unknown"
-            response.fields["status"] = 301
-
-        self.__send_response(response, socket)
-
-    def __handle_introduce(self, request: ChatAppRequest, socket: socket.socket):
-        response = ChatAppRequest()
-        response.type = "RESPONSE"
-        response.from_user = "server"
+        response.fields["for"] = request.get_id()
 
         if self.clients.username_taken(request.from_user):
             response.to_user = "unknown"
@@ -206,52 +145,79 @@ class ChatServer():
             self.clients.set_socket_username(request.from_user, socket)
             response.to_user = request.from_user
             response.fields["status"] = 100
-            response.fields["status"] = 100
 
             messages = self.clients.find_messages(request.from_user)
-            response.fields["messages"] = str(messages)
-
-        logger.log_request(request)
+            response.fields["messages"] = messages
 
         self.__send_response(response, socket)
+
     
-    def __handle_goodbye(self, request: ChatAppRequest, socket: socket.socket) -> bool:
+    def __handle_post(self, request: ChatAppRequest, socket: socket.socket) -> None:
         response = ChatAppRequest()
-        response.type = "GOODBYE"
+        response.type = "RESPONSE"
         response.from_user = "server"
-        dont_end_loop = True
+        response.fields["for"] = request.get_id()
 
-        response.to_user = request.from_user
-        response.fields["status"] = 200
-        dont_end_loop = False
+        if self.clients.username_taken(request.from_user):
+            response.to_user = request.from_user
 
-        logger.log_request(request)
+            message = {
+                "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
+                "message": request.fields["message"],
+                "from_user": request.from_user,
+                "to_user": request.to_user
+            }
+
+            if (self.clients.username_taken(request.to_user)):
+                request.fields["message"] = message
+                self.__send_response(request, self.clients.get_socket_by_username(request.to_user))
+            
+            response.fields["status"] = 100
+            response.fields["message"] = message
+
+            self.clients.put_message(message)
+            self.clients.dump_messages()
+
+        else:
+            response.to_user = "unknown"
+            response.fields["status"] = 304
+
 
         self.__send_response(response, socket)
-        return dont_end_loop
+
+    
+    def __handle_goodbye(self, request: ChatAppRequest, socket: socket.socket) -> None:
+        response = ChatAppRequest()
+        response.type = "RESPONSE"
+        response.from_user = "server"
+        response.to_user = request.from_user
+        response.fields["status"] = 100
+        response.fields["for"] = request.get_id()
+
+        self.clients.remove_socket(socket)
 
 
-    def __send_response(self, response: ChatAppRequest, socket: socket.socket):
+        self.__send_response(response, socket)
+
+
+    def __send_response(self, response: ChatAppRequest, socket: socket.socket) -> None:
         logger.log_response(response)
         socket.send((str(response) + "\\\n").encode())
-    
-    def __forward_request(self, request: ChatAppRequest, socket: socket.socket):
-        logger.log_request(request)
-        socket.send(str(request).encode())
 
 
-
-    def __request_handler_loop(self):
+    def __request_handler_loop(self) -> None:
         print("Server now accepting connections")
         while True:
             client_socket, client_address = self.socket_in.accept()
-            client_thread = threading.Thread(target=self.handle_request, args=(client_socket, client_address))
+            client_thread = threading.Thread(target=self.handle_request, args=(client_socket,))
             client_thread.start() 
 
-    def __bind_socket_in(self, port):
+
+    def __bind_socket_in(self, port) -> None:
         ip_temp = '127.0.0.1'
         self.socket_in.bind((ip_temp, port))
         print(f"socket binded to `{ip_temp}:{port}`")
+
 
 if __name__ == "__main__":
     server = ChatServer()
@@ -262,7 +228,3 @@ if __name__ == "__main__":
     port_number = args.port
 
     server.listen_to(port_number)
-
-
-
-

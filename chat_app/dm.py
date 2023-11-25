@@ -7,35 +7,33 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, font, Label
 import client
-import select
 import threading
 import time
-import json
+import ast
 
+last_message = {}  # Initialize an empty dictionary as the global variable
+last_message_lock = threading.Lock()
 
+def update_last_message(new_message):
+    global last_message
+    with last_message_lock:
+        last_message = new_message
 
-def dm(chat_client: client.ChatClient, username: str, owner_username: str):
+def display_last_message():
+    global last_message
+    with last_message_lock:
+        return last_message
 
-    def handle_incoming():
-        while True:
-            pause_event.wait()  # Wait if the pause event is set
-            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
-            if ready_to_read:
-                chat_client.out_socket.setblocking(True)
-                chat_client.handle_request()
-                chat_client.out_socket.setblocking(False)
-
-
+def dm(chat_client: client.ChatClient, to_user: str):
 
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame1")
 
     # Filter messages involving the specified username
-    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
-    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
-
+    filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
+    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
 
     def relative_to_assets(path: str) -> Path:
         return ASSETS_PATH / Path(path)
@@ -75,27 +73,68 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
         font=("Inter", 60 * -1)
     )
 
-    y_offset = 300  # Initial Y offset for displaying messages
-    # Iterate over the last 20 messages (or less if there are fewer than 20 messages)
-    # until i get pages working, or never teehee
-    for message in sorted_messages[-20:]:
-        text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
-        canvas.create_text(
-            600,
-            y_offset,
-            anchor="nw",
-            text=text,
-            fill="#FFFFFF",
-            font=("Inter", 14)
-        )
-        y_offset += 30  # Increment Y offset to display next message
+    error_label = Label(window, text="", fg="red")  # Label to show error message
+
+
+    def wrap_text(canvas, text, width):
+        lines = []
+        words = text.split()
+        current_line = ''
+        canvas_font = font.Font(family="Inter", size=14)  # Replace with your desired font family and size
+        for word in words:
+            # Get the width of the current line with the next word
+            current_width = canvas_font.measure(current_line + word)
+            if current_width <= width:
+                current_line += word + ' '
+            else:
+                lines.append(current_line)
+                current_line = word + ' '
+        lines.append(current_line)
+        return ['\n'.join(lines), len(lines)]
+
+    def display_messages(y_offset,max_width,sorted_messages):        
+        lines_displayed = 0
+        for message in sorted_messages:
+            if lines_displayed == 0:
+                update_last_message(message)
+
+            wrapped_text = wrap_text(canvas, f"{message['timestamp']} - {message['from_user']}: {message['message']}", max_width)
+            lines_displayed += wrapped_text[1]
+            
+            if lines_displayed > 24:
+                break
+            
+            y_offset -= 26 * wrapped_text[1]  # Increment Y offset to display next message
+
+            canvas.create_text(
+                600,
+                y_offset,
+                anchor="nw",
+                text=wrapped_text[0],
+                fill="#FFFFFF",
+                font=("Inter", 14)
+            )
+    
+    y_offset = 870  # Initial Y offset for displaying messages
+    max_width = 500
+    display_messages(y_offset,max_width,sorted_messages)
 
     # Function to refresh the display with updated messages
     def refresh_display():
+        global last_message 
+        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
+        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
+
+        # if the last message has changed don't clear the canvas
+        # last soreted_messages
+
+        last_message = display_last_message()
+        if sorted_messages and last_message:
+            if last_message['from_user'] == sorted_messages[0]['from_user'] and last_message['to_user'] == sorted_messages[0]['to_user'] and last_message['message'] == sorted_messages[0]['message']:                
+                return
+        
         canvas.delete("all")  # Clear the canvas
 
-        filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == username or msg['to_user'] == username]
-        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
         canvas.place(x = 0, y = 0)
         # bg rectangle
         canvas.create_rectangle(
@@ -115,18 +154,16 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
             font=("Inter", 60 * -1)
         )
 
-        y_offset = 300  # Initial Y offset for displaying messages
-        for message in sorted_messages[-20:]:
-            text = f"{message['timestamp']} - {message['from_user']}: {message['message']}"
-            canvas.create_text(
-                600,
-                y_offset,
-                anchor="nw",
-                text=text,
-                fill="#FFFFFF",
-                font=("Inter", 14)
-            )
-            y_offset += 30  # Increment Y offset for the next message
+        # Display the messages
+        y_offset = 870  # Initial Y offset for displaying messages
+        max_width = 500
+        display_messages(y_offset,max_width,sorted_messages)
+
+    
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
+    
 
     # Function to send the message when the button is clicked
     def send_message():
@@ -136,21 +173,16 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
         # Clear the Entry widget after sending the message
         message_entry.delete(0, 'end')
         # Code to send the message using chat_client
-        message = {
-            "timestamp": time.strftime("[%Y-%m-%d %H:%M:%S]"),
-            "message": message_text,
-            "from_user": owner_username,
-            "to_user": username
-        }
-        chat_client.messages.append(message)
-        pause_event.set()
-        chat_client.out_socket.setblocking(True)
-        response = chat_client.post(username, message_text)
-        chat_client.out_socket.setblocking(False)
-        pause_event.clear()
-        print(response)
+        
+        response = chat_client.post(to_user, message_text)
 
-        refresh_display()
+        if response.fields["status"] == 100:
+            chat_client.messages.append(ast.literal_eval(response.fields["message"]))
+        else:
+            print("Login failed, status code:", response.fields["status"])
+
+            window.after(100, show_error_message)
+
 
     # Create an Entry widget for typing the message
     message_entry = Entry(window, font=("Inter", 12))
@@ -160,35 +192,30 @@ def dm(chat_client: client.ChatClient, username: str, owner_username: str):
     send_button = Button(window, text="Send", command=send_message)
     send_button.place(x=900, y=900)
 
-    pause_event = threading.Event()
-
-    # it was too tough doing blocking and non blocking so i gave in an did a 2nd thread... 
-    incoming_thread = threading.Thread(target=handle_incoming)
-    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
-    incoming_thread.start()
-
-    def check_messages():
-        last_displayed_message = message
-
+    def refresh_loop():
         while True:
-            time.sleep(1)  # Check every second
-            chat_client.messages.sort(key=lambda x: x['timestamp'])  # Sort the messages
+            refresh_display()
+            time.sleep(1)
 
-            # Get the last message after sorting
-            last_message = chat_client.messages[-1]['message'] if chat_client.messages else ""
+    listening_thread = threading.Thread(target=refresh_loop, args=())
+    listening_thread.start()
 
-            # Check if the last message is different from the last displayed message
-            if last_message != last_displayed_message:
-                last_displayed_message = last_message
-                refresh_display()  # Call the function to refresh the GUI
+    def logout():
+        response = chat_client.goodbye()
 
-        
+        if response.fields["status"] == 100:
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
 
 
-    # Start the thread to periodically check for new messages, without this, it only updates on sending a message
-    check_messages_thread = threading.Thread(target=check_messages)
-    check_messages_thread.daemon = True
-    check_messages_thread.start()
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
 
     window.resizable(False, False)
     window.mainloop()

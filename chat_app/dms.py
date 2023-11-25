@@ -7,25 +7,11 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Label
 import client
 import dm
-import threading
-import select
 
-def dms(chat_client: client.ChatClient, username: str):
-    def handle_incoming():
-        chat_client.out_socket.setblocking(False)
-        while True:
-            ready_to_read, _, _ = select.select([chat_client.out_socket], [], [], 0.1)
-            if ready_to_read:
-                chat_client.out_socket.setblocking(True)
-                chat_client.handle_request()
-
-    users = set(message['from_user'] for message in chat_client.messages) | set(message['to_user'] for message in chat_client.messages)
-    set.remove(users, username)
-    print(users)
-
+def dms(chat_client: client.ChatClient):
     OUTPUT_PATH = Path(__file__).parent
     ASSETS_PATH = OUTPUT_PATH / Path(r"assets/frame0")
 
@@ -33,6 +19,9 @@ def dms(chat_client: client.ChatClient, username: str):
     def relative_to_assets(path: str) -> Path:
         return ASSETS_PATH / Path(path)
 
+    users = set(message['from_user'] for message in chat_client.messages)
+    if chat_client.username in users:
+        set.remove(users, chat_client.username)
 
     window = Tk()
 
@@ -95,7 +84,7 @@ def dms(chat_client: client.ChatClient, username: str):
     
     def circle_click(button_username):
         window.destroy()
-        dm.dm(chat_client, button_username, username)
+        dm.dm(chat_client, button_username)
 
     def dm_button(canvas, x, y, diameter, color, button_username):
         def on_click():
@@ -123,6 +112,9 @@ def dms(chat_client: client.ChatClient, username: str):
         952.0,
         fill="#332222",
         outline="")
+    
+    error_label = Label(window, text="", fg="red")  # Label to show error message
+
 
     #for each user do a rectangle whiteish circle, head, and body
     for i, user in enumerate(users):
@@ -169,9 +161,43 @@ def dms(chat_client: client.ChatClient, username: str):
         font=("Inter", 60 * -1)
     )
 
-    incoming_thread = threading.Thread(target=handle_incoming)
-    incoming_thread.daemon = True  # Set the thread as a daemon to exit with the main thread
-    incoming_thread.start()
+    def new_dm():
+        message_text = message_entry.get()  # Get the text from the Entry widget
+        if message_text == "":
+            return
+        # Clear the Entry widget after sending the message
+        message_entry.delete(0, 'end')
+        # Code to send the message using chat_client
+        window.destroy()
+        dm.dm(chat_client, message_text)
+
+    def logout():
+        response = chat_client.goodbye()
+
+        if response.fields["status"] == 100:
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
+
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
+
+
+    # Create an Entry widget for typing the message
+    message_entry = Entry(window, font=("Inter", 12))
+    message_entry.place(x=600, y=900)
+
+    # Create a Button to send the message
+    send_button = Button(window, text="Open New/Old DM", command=new_dm)
+    send_button.place(x=900, y=900)
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
 
     window.resizable(False, False)
     window.mainloop()
