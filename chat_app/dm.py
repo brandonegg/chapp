@@ -91,7 +91,6 @@ def dm(chat_client: client.ChatClient, to_user: str):
 
     def display_messages(y_offset,max_width,sorted_messages):        
         lines_displayed = 0
-        message_before = None
         for message in sorted_messages:
             if lines_displayed == 0:
                 update_last_message(message)
