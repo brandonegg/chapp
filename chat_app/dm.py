@@ -33,8 +33,7 @@ def dm(chat_client: client.ChatClient, to_user: str):
 
     # Filter messages involving the specified username
     filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
-    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
-
+    sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
 
     def relative_to_assets(path: str) -> Path:
         return ASSETS_PATH / Path(path)
@@ -90,11 +89,21 @@ def dm(chat_client: client.ChatClient, to_user: str):
         lines.append(current_line)
         return ['\n'.join(lines), len(lines)]
 
-    def display_messages(y_offset,max_width,sorted_messages):
-        # Iterate over the last 20 messages (or less if there are fewer than 20 messages)
-        # until i get pages working, or never teehee
-        for message in sorted_messages[-20:]:
+    def display_messages(y_offset,max_width,sorted_messages):        
+        lines_displayed = 0
+        message_before = None
+        for message in sorted_messages:
+            if lines_displayed == 0:
+                update_last_message(message)
+
             wrapped_text = wrap_text(canvas, f"{message['timestamp']} - {message['from_user']}: {message['message']}", max_width)
+            lines_displayed += wrapped_text[1]
+            
+            if lines_displayed > 24:
+                break
+            
+            y_offset -= 26 * wrapped_text[1]  # Increment Y offset to display next message
+
             canvas.create_text(
                 600,
                 y_offset,
@@ -103,10 +112,8 @@ def dm(chat_client: client.ChatClient, to_user: str):
                 fill="#FFFFFF",
                 font=("Inter", 14)
             )
-            y_offset += 30 * wrapped_text[1]  # Increment Y offset to display next message
-            update_last_message(message)
     
-    y_offset = 300  # Initial Y offset for displaying messages
+    y_offset = 870  # Initial Y offset for displaying messages
     max_width = 500
     display_messages(y_offset,max_width,sorted_messages)
 
@@ -114,13 +121,16 @@ def dm(chat_client: client.ChatClient, to_user: str):
     def refresh_display():
         global last_message 
         filtered_messages = [msg for msg in chat_client.messages if msg['from_user'] == to_user or msg['to_user'] == to_user]
-        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'])
+        sorted_messages = sorted(filtered_messages, key=lambda x: x['timestamp'], reverse=True)
 
         # if the last message has changed don't clear the canvas
         # last soreted_messages
+
         last_message = display_last_message()
-        if sorted_messages:
-            if last_message['from_user'] == sorted_messages[-1]['from_user'] and last_message['to_user'] == sorted_messages[-1]['to_user'] and last_message['message'] == sorted_messages[-1]['message']:                
+        if sorted_messages and last_message:
+            print("Sort:", sorted_messages[0])
+            print("Last:",last_message)
+            if last_message['from_user'] == sorted_messages[0]['from_user'] and last_message['to_user'] == sorted_messages[0]['to_user'] and last_message['message'] == sorted_messages[0]['message']:                
                 return
         
         canvas.delete("all")  # Clear the canvas
@@ -145,7 +155,7 @@ def dm(chat_client: client.ChatClient, to_user: str):
         )
 
         # Display the messages
-        y_offset = 300  # Initial Y offset for displaying messages
+        y_offset = 870  # Initial Y offset for displaying messages
         max_width = 500
         display_messages(y_offset,max_width,sorted_messages)
 
