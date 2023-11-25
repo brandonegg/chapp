@@ -7,7 +7,7 @@ from pathlib import Path
 
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, Label
 import client
 import dm
 
@@ -112,6 +112,9 @@ def dms(chat_client: client.ChatClient):
         952.0,
         fill="#332222",
         outline="")
+    
+    error_label = Label(window, text="", fg="red")  # Label to show error message
+
 
     #for each user do a rectangle whiteish circle, head, and body
     for i, user in enumerate(users):
@@ -168,6 +171,23 @@ def dms(chat_client: client.ChatClient):
         window.destroy()
         dm.dm(chat_client, message_text)
 
+    def logout():
+        response = chat_client.goodbye()
+
+        if response.fields["status"] == 100:
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
+
+    def show_error_message(status):
+        error_label.place(x=580, y=250)
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
+
+
     # Create an Entry widget for typing the message
     message_entry = Entry(window, font=("Inter", 12))
     message_entry.place(x=600, y=900)
@@ -175,6 +195,9 @@ def dms(chat_client: client.ChatClient):
     # Create a Button to send the message
     send_button = Button(window, text="Open New/Old DM", command=new_dm)
     send_button.place(x=900, y=900)
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
 
     window.resizable(False, False)
     window.mainloop()

@@ -162,7 +162,7 @@ def dm(chat_client: client.ChatClient, to_user: str):
     
     def show_error_message(status):
         error_label.place(x=580, y=250)
-        error_label.config(text=f'Sending Message Failed. status code:{status}', fg="red", font=("Arial", 25))
+        error_label.config(text=f"Error occurred: {status}", fg="red", font=("Arial", 25))
     
 
     # Function to send the message when the button is clicked
@@ -200,6 +200,22 @@ def dm(chat_client: client.ChatClient, to_user: str):
     listening_thread = threading.Thread(target=refresh_loop, args=())
     listening_thread.start()
 
+    def logout():
+        response = chat_client.goodbye()
+
+        if response.fields["status"] == 100:
+            window.destroy()
+            import login
+            login.login()
+        else:
+            print("Logout failed, status code:", response.fields["status"])
+
+            window.after(100, lambda: show_error_message(response.fields["status"]))
+
+
+
+    logout_button = Button(window, text="Logout", command=logout)
+    logout_button.place(x=1150, y=200)
 
     window.resizable(False, False)
     window.mainloop()
