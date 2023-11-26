@@ -89,8 +89,8 @@ def dms(chat_client: client.ChatClient):
     def dm_button(canvas, x, y, diameter, color, button_username):
         def on_click():
             circle_click(button_username)
-        
-        button = Button(canvas, command=on_click, bg=color, bd=0, activebackground=color)
+
+        button = Button(canvas, text="Enter This DM", command=on_click, bg=color, bd=0, activebackground=color)
         button.place(x=x, y=y, width=diameter, height=diameter)
 
     canvas = Canvas(
