@@ -38,7 +38,7 @@ We have included several test cases for validating the protocol message parser (
 sh ./bin/test
 ```
 
-## Overview:
+## Protocol Overview:
 
 The protocol has the following format:
 
