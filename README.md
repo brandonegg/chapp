@@ -1,6 +1,8 @@
 # Chatting Application Protocol
 
 ## Getting Started:
+
+### Running the Application
 > Note: python may be referred to python3 on your system. The two are typically interchangable and dependent on your system path configuration. If python does not work, you may try python3
 
 #### Start the server:
@@ -25,11 +27,11 @@ python .\chat_app\login.py
 sh ./bin/start.sh client
 ```
 
-
+### Basic Application Guide
 To send messages, on one login.py being run put in a name and submit, then either click on a previous dm's button or put in who you would like to dm and click the submit button. Then you can input a chat message and hit send and it will be seen on your GUI and the recipient's GUI if they are online. At any point, you can close the GUI, or hit the logout button and you will be able to log in again as that user. The same user can not be logged in at the same time as handled by the server.
 
 
-**Running tests:**
+### Running Tests
 We have included several test cases for validating the protocol message parser (ChatAppRequest class). The tests are run with pytest using the shollowing command.
 
 ```sh
