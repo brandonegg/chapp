@@ -1,3 +1,4 @@
+import select
 import socket
 import time
 from request import ChatAppRequest
@@ -14,6 +15,7 @@ class ChatClient():
     self.out_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.username = username
     self.responses: list[ChatAppRequest] = []
+    self.is_closed = False
 
     #list of all messages not in order
     self.messages: list[dict] = []
@@ -25,14 +27,28 @@ class ChatClient():
 
     listening_thread = threading.Thread(target=self.client_loop, args=())
     listening_thread.start()
+    
 
 
   def client_loop(self) -> None:
     received_data = b''
-    self.out_socket.settimeout(5)  # Set a 5-second timeout
     while True:
-      try:
-        chunk = self.out_socket.recv(1024)  # Receive up to 1024 bytes
+      readable, _, _ = select.select([self.out_socket], [], [], 0.1)  # Check for readability with a timeout of 0.1 seconds
+      if self.is_closed:
+        print("GUI closed")
+        self.out_socket.settimeout(5)  # Set a 5-second timeout
+        try:
+          response = self.goodbye()
+          print(response)
+          print("goodbye done")
+          self.out_socket.close()
+          return
+        except socket.timeout:
+          self.out_socket.close()
+          print("Socket timed out")
+          return
+      for sock in readable:
+        chunk = sock.recv(1024)  # Receive up to 1024 bytes
         received_data += chunk
                 
         if received_data.endswith(b'\\\n'):  # Check if the received data ends with a newline character
@@ -43,9 +59,6 @@ class ChatClient():
             else:
               self.responses.append(response)
             received_data = b''
-      except socket.timeout:
-        print("Socket timed out!")
-        return
 
 
   # gui needs to get the messages from the response.fields["messages"]

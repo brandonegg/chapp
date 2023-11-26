@@ -171,11 +171,19 @@ def dms(chat_client: client.ChatClient):
         window.destroy()
         dm.dm(chat_client, message_text)
 
+    def on_closing():
+        chat_client.is_closed = True
+        print(chat_client.is_closed)
+        window.destroy()
+
+    window.protocol("WM_DELETE_WINDOW", on_closing)
+
     def logout():
         response = chat_client.goodbye()
 
         if response.fields["status"] == 100:
             window.destroy()
+            chat_client.is_closed = True
             import login
             login.login()
         else:

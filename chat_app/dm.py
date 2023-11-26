@@ -201,9 +201,18 @@ def dm(chat_client: client.ChatClient, to_user: str):
         while not window_destroyed:
             refresh_display()
             time.sleep(1)
+        time.sleep(5) #give goodbye a chance to send
 
     listening_thread = threading.Thread(target=refresh_loop, args=())
     listening_thread.start()
+
+    def on_closing():
+        global window_destroyed
+        window_destroyed = True
+        chat_client.is_closed = True
+        window.destroy()
+
+    window.protocol("WM_DELETE_WINDOW", on_closing)
 
     def logout():
         response = chat_client.goodbye()
@@ -212,13 +221,13 @@ def dm(chat_client: client.ChatClient, to_user: str):
             global window_destroyed
             window_destroyed = True
             window.destroy()
+            chat_client.is_closed = True
             import login
             login.login()
         else:
             print("Logout failed, status code:", response.fields["status"])
 
             window.after(100, lambda: show_error_message(response.fields["status"]))
-
 
 
     logout_button = Button(window, text="Logout", command=logout)

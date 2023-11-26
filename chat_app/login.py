@@ -87,6 +87,8 @@ def login():
 
     def login_pressed():
         username = entry_username.get()  # Get username from Entry field
+        if username == "":
+            return
 
         chat_client = client.ChatClient(username)
         chat_client.connect_to("127.0.0.1", 6969)
@@ -191,6 +193,7 @@ def login():
         fill="#FFFFFF",
         font=("Inter", 60 * -1)
     )
+
     window.resizable(False, False)
     window.mainloop()
 
