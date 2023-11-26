@@ -28,7 +28,8 @@ STATUS_CODE_MAP = {
 FIELD_TYPE_MAP = {
     "status": int,
     "message": str,
-    "for": int
+    "for": int,
+    "id": int
 }
 
 
@@ -65,20 +66,13 @@ class ChatAppRequest():
 
         self.__parse_action_line(lines[0])
 
-        self.__parse_id_line(lines[1])
+        if len(lines) > 1:
+            self.__parse_fields(lines[1:])
 
-        if len(lines) > 2:
-            self.__parse_fields(lines[2:])
+        if "id" in self.fields:
+            self.__id = self.fields["id"]
 
         self.__validate_request()
-
-
-    def __parse_id_line(self, line: str) -> None:
-        split = line.split(":")
-        if not len(split) == 2:
-            raise UnparsableRequestException(205, "Unreadable ID")
-        
-        self.__id = split[1]
 
 
     def __parse_action_line(self, line: str) -> None:
@@ -104,7 +98,10 @@ class ChatAppRequest():
 
         # Validate required fields are present
         if not REQUEST_TYPE_REQUIRED_FIELD_MAPS[self.type].issubset(set([field for field in self.fields])):
-            raise UnparsableRequestException(204, f"Required field missing")
+            raise UnparsableRequestException(204, f"Required field missing from {self.fields}")
+        
+        if self.__id is None:
+            raise UnparsableRequestException(205, "Missing ID line")
 
 
     def __parse_fields(self, lines: list[str]) -> None:

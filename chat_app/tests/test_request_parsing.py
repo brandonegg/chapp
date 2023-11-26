@@ -46,7 +46,7 @@ def test_valid_introduce():
   """
   Valid introduction request
   """
-  result = ChatAppRequest("INTRODUCE\tbrandon->server")
+  result = ChatAppRequest("INTRODUCE\tbrandon->server\\\nid:1")
 
   assert result.type == "INTRODUCE"
   assert result.from_user == "brandon"
@@ -56,7 +56,7 @@ def test_valid_response():
   """
   Valid response
   """
-  result = ChatAppRequest("RESPONSE\tserver->brandon\\\nstatus: 200")
+  result = ChatAppRequest("RESPONSE\tserver->brandon\\\nid: 1\\\nfor: 1\\\nstatus: 200")
   
   assert result.type == "RESPONSE"
   assert result.from_user == "server"
@@ -68,6 +68,6 @@ def test_valid_request_with_complex_characters():
   """
   Includes a \n and : in message, both parsing characters of fields that should be valid.
   """
-  result = ChatAppRequest("POST\tbrandon->server\\\nmessage: hello\nBrandon:brandon")
+  result = ChatAppRequest("POST\tbrandon->server\\\nmessage: hello\nBrandon:brandon\\\nid:1")
   
   assert result.fields["message"] == "hello\nBrandon:brandon"
